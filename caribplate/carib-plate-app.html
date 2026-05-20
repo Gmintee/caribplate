@@ -2834,7 +2834,22 @@ Use authentic Trinidadian and Caribbean foods. Vary meals daily. Return ONLY the
     if (loadingSub) loadingSub.textContent = 'Generating days 16-30...';
     const secondHalf = await fetchHalf(16, 30);
 
-    const plan = [...firstHalf, ...secondHalf];
+    const days = [...firstHalf, ...secondHalf];
+
+    // Build plan object matching renderMealPlan expectations
+    const plan = {
+      days: days,
+      targetCalories: targetCal,
+      dietType: diet,
+      focus: focus,
+      tips: [
+        'Drink at least 8 glasses of water daily.',
+        'Prep your proteins in batches on Sundays.',
+        'Use dasheen, eddoes and breadfruit as healthy carb swaps.',
+        'Fresh lime juice adds flavour without calories.',
+        'Eat slowly — it takes 20 minutes to feel full.'
+      ]
+    };
 
     clearInterval(msgInterval);
     loading.classList.remove('show');
@@ -2911,6 +2926,11 @@ function renderWeekDays(plan, week) {
 
   document.getElementById('daysGrid').innerHTML = weekDays.map((d, idx) => {
     const dayOfWeek = dayNames[(start + idx) % 7];
+    const meals = d.meals || {};
+    const bf = meals.breakfast || meals.Breakfast || '—';
+    const ln = meals.lunch || meals.Lunch || '—';
+    const dn = meals.dinner || meals.Dinner || '—';
+    const sn = meals.snack || meals.Snack || '—';
     return `
     <div class="day-card">
       <div class="day-card-header">
@@ -2923,23 +2943,19 @@ function renderWeekDays(plan, week) {
       <div class="day-meals">
         <div class="day-meal-row">
           <div class="day-meal-label">🌅 Breakfast</div>
-          <div class="day-meal-food">${d.breakfast.food}</div>
-          <div class="day-meal-cal">${d.breakfast.detail} · ${d.breakfast.cal} cal</div>
+          <div class="day-meal-food">${bf}</div>
         </div>
         <div class="day-meal-row">
           <div class="day-meal-label">☀️ Lunch</div>
-          <div class="day-meal-food">${d.lunch.food}</div>
-          <div class="day-meal-cal">${d.lunch.detail} · ${d.lunch.cal} cal</div>
+          <div class="day-meal-food">${ln}</div>
         </div>
         <div class="day-meal-row">
           <div class="day-meal-label">🌙 Dinner</div>
-          <div class="day-meal-food">${d.dinner.food}</div>
-          <div class="day-meal-cal">${d.dinner.detail} · ${d.dinner.cal} cal</div>
+          <div class="day-meal-food">${dn}</div>
         </div>
         <div class="day-meal-row">
           <div class="day-meal-label">🥭 Snack</div>
-          <div class="day-meal-food">${d.snack.food}</div>
-          <div class="day-meal-cal">${d.snack.detail} · ${d.snack.cal} cal</div>
+          <div class="day-meal-food">${sn}</div>
         </div>
       </div>
       <button class="load-to-diary-btn" onclick="loadDayToDiary(${d.day - 1})">+ Load to diary</button>
@@ -2950,6 +2966,11 @@ function renderWeekDays(plan, week) {
 function loadDayToDiary(dayIdx) {
   if (!currentPlan || !currentPlan.days[dayIdx]) return;
   const planDay = currentPlan.days[dayIdx];
+  const meals = planDay.meals || {};
+  const bf = meals.breakfast || meals.Breakfast || '';
+  const ln = meals.lunch || meals.Lunch || '';
+  const dn = meals.dinner || meals.Dinner || '';
+  const sn = meals.snack || meals.Snack || '';
 
   // Switch to diary tab
   showTabDirect('diary');
