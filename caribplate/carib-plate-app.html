@@ -1560,15 +1560,21 @@
     <div id="manualEntryForm" style="display:none;padding:14px 16px;border-top:1px solid var(--border);background:var(--cream)">
       <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em">Add Custom Food</div>
       <div style="display:grid;gap:8px">
-        <input id="manualName" class="auth-input" style="background:var(--white);color:var(--text);border-color:var(--border);font-size:13px;padding:8px 12px" placeholder="Food name (e.g. Homemade Pelau)">
-        <input id="manualServing" class="auth-input" style="background:var(--white);color:var(--text);border-color:var(--border);font-size:13px;padding:8px 12px" placeholder="Serving size (e.g. 1 cup, 200g)">
+        <div><label style="font-size:11px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">FOOD NAME</label>
+        <input id="manualName" class="auth-input" style="background:var(--white);color:var(--text);border-color:var(--border);font-size:13px;padding:8px 12px" placeholder="e.g. Homemade Pelau"></div>
+        <div><label style="font-size:11px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">SERVING SIZE</label>
+        <input id="manualServing" class="auth-input" style="background:var(--white);color:var(--text);border-color:var(--border);font-size:13px;padding:8px 12px" placeholder="e.g. 1 cup, 200g"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <input id="manualCal" class="auth-input" style="background:var(--white);color:var(--text);border-color:var(--border);font-size:13px;padding:8px 12px" placeholder="Calories" type="number" min="0">
-          <input id="manualProtein" class="auth-input" style="background:var(--white);color:var(--text);border-color:var(--border);font-size:13px;padding:8px 12px" placeholder="Protein (g)" type="number" min="0">
+          <div><label style="font-size:11px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">CALORIES</label>
+          <input id="manualCal" class="auth-input" style="background:var(--white);color:var(--text);border-color:var(--border);font-size:13px;padding:8px 12px" placeholder="e.g. 350" type="number" min="0"></div>
+          <div><label style="font-size:11px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">PROTEIN (g)</label>
+          <input id="manualProtein" class="auth-input" style="background:var(--white);color:var(--text);border-color:var(--border);font-size:13px;padding:8px 12px" placeholder="e.g. 25" type="number" min="0"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <input id="manualCarbs" class="auth-input" style="background:var(--white);color:var(--text);border-color:var(--border);font-size:13px;padding:8px 12px" placeholder="Carbs (g)" type="number" min="0">
-          <input id="manualFat" class="auth-input" style="background:var(--white);color:var(--text);border-color:var(--border);font-size:13px;padding:8px 12px" placeholder="Fat (g)" type="number" min="0">
+          <div><label style="font-size:11px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">CARBS (g)</label>
+          <input id="manualCarbs" class="auth-input" style="background:var(--white);color:var(--text);border-color:var(--border);font-size:13px;padding:8px 12px" placeholder="e.g. 40" type="number" min="0"></div>
+          <div><label style="font-size:11px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">FAT (g)</label>
+          <input id="manualFat" class="auth-input" style="background:var(--white);color:var(--text);border-color:var(--border);font-size:13px;padding:8px 12px" placeholder="e.g. 12" type="number" min="0"></div>
         </div>
         <button onclick="addManualFood()" style="background:var(--teal);color:var(--white);border:none;border-radius:var(--radius-sm);padding:10px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer">Add to Diary</button>
       </div>
