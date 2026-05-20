@@ -1550,6 +1550,7 @@
       <button class="src-tab active" id="srcTab-caribbean" onclick="setSourceTab('caribbean')" style="flex:1;padding:10px 8px;border:none;background:none;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:var(--gold);border-bottom:2px solid var(--gold);cursor:pointer;">🌴 Caribbean</button>
       <button class="src-tab" id="srcTab-common" onclick="setSourceTab('common')" style="flex:1;padding:10px 8px;border:none;background:none;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:var(--text2);border-bottom:2px solid transparent;cursor:pointer;">🌍 Common Foods</button>
       <button class="src-tab" id="srcTab-world" onclick="setSourceTab('world')" style="flex:1;padding:10px 8px;border:none;background:none;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:var(--text2);border-bottom:2px solid transparent;cursor:pointer;">🔎 World Search</button>
+      <button class="src-tab" id="srcTab-myfoods" onclick="setSourceTab('myfoods')" style="flex:1;padding:10px 8px;border:none;background:none;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:var(--text2);border-bottom:2px solid transparent;cursor:pointer;">⭐ My Foods</button>
     </div>
     <div class="category-filter" id="catFilter" style="flex-shrink:0;"></div>
     <div class="food-list" id="foodList" style="flex:1;overflow-y:auto;min-height:0;"></div>
@@ -2290,21 +2291,35 @@ function addManualFood() {
   if (!cal)  { showToast('Please enter calories');    return; }
 
   if (!activeMeal) return;
-  getDayDiary()[activeMeal].push({
+  const newFood = {
     id: Date.now(),
     name: name,
     serving: serving,
-    cat: 'Custom',
+    cat: 'My Foods',
     cal: cal,
     p: protein,
     c: carbs,
     f: fat,
     fi: 0,
-    source: 'manual'
-  });
+    source: 'custom'
+  };
+
+  // Add to diary
+  getDayDiary()[activeMeal].push({...newFood});
   saveDiary();
   renderDiary();
-  showToast('Added ' + name);
+
+  // Also save to personal foods database
+  let myFoods = [];
+  try { myFoods = JSON.parse(localStorage.getItem('myFoods_' + (currentUser ? currentUser.id : 'guest')) || '[]'); } catch(e) {}
+  // Only add if not already in list
+  if (!myFoods.find(f => f.name.toLowerCase() === name.toLowerCase())) {
+    myFoods.push(newFood);
+    localStorage.setItem('myFoods_' + (currentUser ? currentUser.id : 'guest'), JSON.stringify(myFoods));
+    showToast('Added ' + name + ' to diary and My Foods 🌴');
+  } else {
+    showToast('Added ' + name + ' to diary');
+  }
   closeModalBtn();
 }
 
@@ -2443,6 +2458,9 @@ function setSourceTab(tab) {
     buildCatFilter([]);
     if (q.length >= 2) searchOpenFoodFacts(q);
     else renderWorldPrompt();
+  } else if (tab === 'myfoods') {
+    buildCatFilter([]);
+    renderMyFoods(q);
   } else {
     const source = tab === 'caribbean' ? foods : commonFoods;
     buildCatFilter(source);
@@ -2456,6 +2474,8 @@ function onSearchInput() {
   if (activeSourceTab === 'world') {
     if (q.length >= 2) offSearchTimer = setTimeout(() => searchOpenFoodFacts(q), 500);
     else renderWorldPrompt();
+  } else if (activeSourceTab === 'myfoods') {
+    renderMyFoods(q);
   } else {
     const source = activeSourceTab === 'caribbean' ? foods : commonFoods;
     renderLocalFoodList(source, q);
@@ -2506,6 +2526,46 @@ function renderLocalFoodList(source, q) {
       </div>
     </div>
   `).join('');
+}
+
+
+function renderMyFoods(q) {
+  const list = document.getElementById('foodList');
+  let myFoods = [];
+  try { myFoods = JSON.parse(localStorage.getItem('myFoods_' + (currentUser ? currentUser.id : 'guest')) || '[]'); } catch(e) {}
+
+  const ql = (q||'').toLowerCase();
+  const filtered = ql ? myFoods.filter(f => f.name.toLowerCase().includes(ql)) : myFoods;
+
+  if (filtered.length === 0) {
+    list.innerHTML = '<div style="padding:32px 20px;text-align:center;"><div style="font-size:28px;margin-bottom:12px">⭐</div><div style="font-size:15px;font-weight:500;color:var(--text);margin-bottom:8px">No saved foods yet</div><div style="font-size:13px;color:var(--text3)">Foods you add manually will be saved here for quick access next time.</div></div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(f => `
+    <div class="food-result" onclick="addMyFood(${f.id})">
+      <div>
+        <div class="food-result-name">${f.name}</div>
+        <div class="food-result-detail">${f.serving} · P:${f.p}g C:${f.c}g F:${f.f}g</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="food-result-cal">${f.cal}</div>
+        <div class="add-circle">+</div>
+      </div>
+    </div>
+  `).join('') + '<div style="padding:10px 16px;font-size:12px;color:var(--text3);text-align:center">Long-press a food to remove it from My Foods</div>';
+}
+
+function addMyFood(id) {
+  let myFoods = [];
+  try { myFoods = JSON.parse(localStorage.getItem('myFoods_' + (currentUser ? currentUser.id : 'guest')) || '[]'); } catch(e) {}
+  const food = myFoods.find(f => f.id === id);
+  if (!food || !activeMeal) return;
+  getDayDiary()[activeMeal].push({...food, id: Date.now()});
+  saveDiary();
+  renderDiary();
+  showToast('Added ' + food.name);
+  closeModalBtn();
 }
 
 function renderWorldPrompt() {
@@ -3061,7 +3121,14 @@ async function sendMessage(customText) {
     });
 
     const data = await response.json();
-    const reply = data.content?.[0]?.text || "Sorry, I couldn't get a response. Try again!";
+    let reply;
+    if (data.error) {
+      reply = 'Error: ' + (data.error.message || JSON.stringify(data.error));
+    } else if (data.content && data.content[0]) {
+      reply = data.content[0].text;
+    } else {
+      reply = 'Unexpected response: ' + JSON.stringify(data).slice(0, 200);
+    }
 
     chatHistory.push({ role: 'assistant', content: reply });
     removeTyping();
