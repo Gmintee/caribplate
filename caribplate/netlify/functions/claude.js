@@ -1,7 +1,6 @@
 const https = require('https');
 
 exports.handler = async function(event) {
-  // Handle CORS preflight
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 200,
@@ -18,6 +17,15 @@ exports.handler = async function(event) {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return {
+      statusCode: 500,
+      headers: { 'Access-Control-Allow-Origin': '*' },
+      body: JSON.stringify({ error: { message: 'API key not configured' } })
+    };
+  }
+
   return new Promise((resolve) => {
     try {
       const body = event.body;
@@ -27,7 +35,7 @@ exports.handler = async function(event) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': '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',
+          'x-api-key': apiKey,
           'anthropic-version': '2023-06-01',
           'Content-Length': Buffer.byteLength(body)
         }
@@ -52,7 +60,7 @@ exports.handler = async function(event) {
         resolve({
           statusCode: 500,
           headers: { 'Access-Control-Allow-Origin': '*' },
-          body: JSON.stringify({ error: err.message })
+          body: JSON.stringify({ error: { message: err.message } })
         });
       });
 
@@ -62,7 +70,7 @@ exports.handler = async function(event) {
       resolve({
         statusCode: 500,
         headers: { 'Access-Control-Allow-Origin': '*' },
-        body: JSON.stringify({ error: err.message })
+        body: JSON.stringify({ error: { message: err.message } })
       });
     }
   });
