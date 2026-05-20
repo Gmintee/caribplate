@@ -1,4 +1,6 @@
 [build]
   base = "caribplate"
-  publish = "caribplate"
-  functions = "caribplate/netlify/functions"
+  publish = "."
+
+[functions]
+  directory = "netlify/functions"
