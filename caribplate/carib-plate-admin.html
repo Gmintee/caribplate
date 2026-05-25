@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carib Plate — Food Database Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --gold: #C8922A; --gold-light: #F0C96A;
+  --teal: #1A7A6E; --teal-light: #2AA898;
+  --coral: #D45A3A;
+  --cream: #FBF7F0; --cream-dark: #F0E8D8;
+  --dark: #1C1A16; --dark2: #2D2A24;
+  --text: #2C2820; --text2: #6B6358; --text3: #9A9288;
+  --white: #FFFFFF; --border: rgba(44,40,32,0.12);
+  --radius: 14px; --radius-sm: 8px;
+  --green: #2A8C5A; --red: #D45A3A;
+}
+body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text); min-height: 100vh; }
+
+/* ── AUTH SCREEN ── */
+#authScreen {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh; background: var(--dark);
+}
+.auth-box {
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--radius); padding: 40px 36px; width: 100%; max-width: 380px; text-align: center;
+}
+.auth-title { font-family: 'Playfair Display', serif; font-size: 26px; color: var(--gold-light); margin-bottom: 6px; }
+.auth-sub { font-size: 13px; color: rgba(255,255,255,0.4); margin-bottom: 28px; }
+.auth-input {
+  width: 100%; background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--radius-sm); padding: 12px 14px; font-size: 14px; color: white;
+  outline: none; margin-bottom: 12px; font-family: 'DM Sans', sans-serif;
+}
+.auth-btn {
+  width: 100%; background: var(--gold); color: var(--dark); border: none;
+  border-radius: var(--radius-sm); padding: 13px; font-size: 14px; font-weight: 700;
+  cursor: pointer; font-family: 'DM Sans', sans-serif;
+}
+.auth-btn:hover { background: var(--gold-light); }
+.auth-error { font-size: 13px; color: var(--coral); margin-top: 10px; }
+
+/* ── MAIN APP ── */
+#adminApp { display: none; }
+
+header {
+  background: var(--dark); padding: 0 28px; height: 58px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+}
+.header-logo { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--gold-light); }
+.header-badge { font-size: 11px; background: var(--coral); color: white; border-radius: 20px; padding: 2px 10px; font-weight: 600; margin-left: 10px; }
+.logout-btn {
+  background: none; border: 1px solid rgba(255,255,255,0.2); border-radius: var(--radius-sm);
+  color: rgba(255,255,255,0.5); font-size: 12px; padding: 6px 14px; cursor: pointer; font-family: 'DM Sans', sans-serif;
+}
+.logout-btn:hover { color: white; border-color: rgba(255,255,255,0.4); }
+
+.tabs {
+  background: white; border-bottom: 1px solid var(--border);
+  display: flex; gap: 0; padding: 0 28px;
+}
+.tab-btn {
+  padding: 14px 20px; border: none; background: none; font-size: 14px; font-weight: 500;
+  color: var(--text2); cursor: pointer; border-bottom: 2px solid transparent;
+  font-family: 'DM Sans', sans-serif; white-space: nowrap;
+}
+.tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); font-weight: 600; }
+
+.content { padding: 24px 28px; max-width: 1100px; margin: 0 auto; }
+
+/* ── TOOLBAR ── */
+.toolbar {
+  display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap;
+}
+.search-input {
+  flex: 1; min-width: 200px; background: white; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 9px 14px; font-size: 14px; color: var(--text);
+  outline: none; font-family: 'DM Sans', sans-serif;
+}
+.search-input:focus { border-color: var(--teal); }
+.btn-primary {
+  background: var(--teal); color: white; border: none; border-radius: var(--radius-sm);
+  padding: 10px 18px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif;
+  white-space: nowrap;
+}
+.btn-primary:hover { background: var(--teal-light); }
+.btn-secondary {
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 9px 16px; font-size: 13px; color: var(--text2); cursor: pointer; font-family: 'DM Sans', sans-serif;
+}
+.status-bar { font-size: 13px; color: var(--text3); margin-left: auto; }
+
+/* ── TABLE ── */
+.table-wrap { background: white; border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th {
+  background: var(--cream-dark); padding: 11px 14px; text-align: left;
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text2); border-bottom: 1px solid var(--border);
+}
+tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; cursor: pointer; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--cream); }
+tbody td { padding: 10px 14px; color: var(--text); }
+.td-name { font-weight: 500; max-width: 180px; }
+.td-cat { color: var(--text2); max-width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.td-num { text-align: right; font-variant-numeric: tabular-nums; color: var(--teal); font-weight: 500; }
+.td-actions { white-space: nowrap; }
+.btn-edit {
+  background: none; border: 1px solid var(--teal); color: var(--teal); border-radius: 6px;
+  padding: 4px 10px; font-size: 11px; font-weight: 600; cursor: pointer; margin-right: 6px;
+  font-family: 'DM Sans', sans-serif;
+}
+.btn-edit:hover { background: var(--teal); color: white; }
+.btn-delete {
+  background: none; border: 1px solid var(--coral); color: var(--coral); border-radius: 6px;
+  padding: 4px 10px; font-size: 11px; font-weight: 600; cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+}
+.btn-delete:hover { background: var(--coral); color: white; }
+.inactive-row { opacity: 0.4; }
+.badge-active { display:inline-block; background:rgba(42,136,110,0.12); color:var(--teal); border-radius:20px; padding:2px 8px; font-size:10px; font-weight:600; }
+.badge-hidden { display:inline-block; background:rgba(212,90,58,0.12); color:var(--coral); border-radius:20px; padding:2px 8px; font-size:10px; font-weight:600; }
+
+/* ── MODAL ── */
+.overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+  z-index: 500; align-items: center; justify-content: center; padding: 20px;
+}
+.overlay.open { display: flex; }
+.modal {
+  background: white; border-radius: var(--radius); padding: 28px 28px 24px;
+  width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto;
+}
+.modal-title { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--text); margin-bottom: 20px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-full { grid-column: 1 / -1; }
+.form-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text2); margin-bottom: 5px; display: block; }
+.form-input, .form-select {
+  width: 100%; background: var(--cream); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 10px 12px; font-size: 14px; color: var(--text);
+  outline: none; font-family: 'DM Sans', sans-serif;
+}
+.form-input:focus, .form-select:focus { border-color: var(--teal); }
+.modal-actions { display: flex; gap: 10px; margin-top: 22px; justify-content: flex-end; }
+.btn-save {
+  background: var(--gold); color: var(--dark); border: none; border-radius: var(--radius-sm);
+  padding: 11px 24px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif;
+}
+.btn-save:hover { background: var(--gold-light); }
+.btn-cancel {
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 10px 20px; font-size: 13px; color: var(--text2); cursor: pointer; font-family: 'DM Sans', sans-serif;
+}
+
+/* ── TOAST ── */
+#toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+  background: var(--dark); color: white; border-radius: 30px; padding: 10px 22px;
+  font-size: 13px; z-index: 9999; transition: transform 0.3s; pointer-events: none;
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ── LOADING ── */
+.loading { text-align: center; padding: 60px 20px; color: var(--text3); font-size: 15px; }
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="authScreen">
+  <div class="auth-box">
+    <div class="auth-title">Carib Plate</div>
+    <div class="auth-sub">Food Database Admin</div>
+    <input type="password" class="auth-input" id="adminPw" placeholder="Admin password" onkeydown="if(event.key==='Enter')doAdminLogin()">
+    <button class="auth-btn" onclick="doAdminLogin()">Enter →</button>
+    <div class="auth-error" id="authError"></div>
+  </div>
+</div>
+
+<!-- ADMIN APP -->
+<div id="adminApp">
+  <header>
+    <div style="display:flex;align-items:center;">
+      <span class="header-logo">Carib Plate</span>
+      <span class="header-badge">ADMIN</span>
+    </div>
+    <button class="logout-btn" onclick="doLogout()">Log out</button>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tabCaribBtn" onclick="switchTab('caribbean')">🌴 Caribbean Foods</button>
+    <button class="tab-btn" id="tabCommonBtn" onclick="switchTab('common')">🌍 Common Foods</button>
+  </div>
+
+  <div class="content">
+    <div class="toolbar">
+      <input type="text" class="search-input" id="searchBox" placeholder="Search by name or category..." oninput="filterTable()">
+      <button class="btn-secondary" onclick="toggleShowHidden()" id="toggleHiddenBtn">Show hidden</button>
+      <button class="btn-primary" onclick="openAddModal()">+ Add food</button>
+      <span class="status-bar" id="statusBar">Loading…</span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Category</th>
+            <th>Serving</th>
+            <th style="text-align:right">Cal</th>
+            <th style="text-align:right">P</th>
+            <th style="text-align:right">C</th>
+            <th style="text-align:right">F</th>
+            <th style="text-align:right">Fi</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="foodTableBody">
+          <tr><td colspan="10" class="loading">Loading foods…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="overlay" id="foodModal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Add Food</div>
+    <div class="form-grid">
+      <div class="form-full">
+        <label class="form-label">Name *</label>
+        <input class="form-input" id="fName" placeholder="e.g. Doubles">
+      </div>
+      <div>
+        <label class="form-label">Category *</label>
+        <input class="form-input" id="fCat" placeholder="e.g. Breakfast / Street Food">
+      </div>
+      <div>
+        <label class="form-label">Serving description *</label>
+        <input class="form-input" id="fServing" placeholder="e.g. 1 double (2 bara + channa)">
+      </div>
+      <div>
+        <label class="form-label">Calories *</label>
+        <input class="form-input" id="fCal" type="number" min="0" placeholder="280">
+      </div>
+      <div>
+        <label class="form-label">Protein (g)</label>
+        <input class="form-input" id="fP" type="number" min="0" step="0.1" placeholder="0">
+      </div>
+      <div>
+        <label class="form-label">Carbohydrates (g)</label>
+        <input class="form-input" id="fC" type="number" min="0" step="0.1" placeholder="0">
+      </div>
+      <div>
+        <label class="form-label">Fat (g)</label>
+        <input class="form-input" id="fF" type="number" min="0" step="0.1" placeholder="0">
+      </div>
+      <div>
+        <label class="form-label">Fibre (g)</label>
+        <input class="form-input" id="fFi" type="number" min="0" step="0.1" placeholder="0">
+      </div>
+      <div>
+        <label class="form-label">Status</label>
+        <select class="form-select" id="fActive">
+          <option value="true">Active (visible to users)</option>
+          <option value="false">Hidden</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" onclick="saveFood()">Save food</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────
+var SB_URL   = 'https://wqyisztffzonjblqhemd.supabase.co';
+var SB_KEY   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndxeWlzenRmZnpvbmpibHFoZW1kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyMDkxMDksImV4cCI6MjA5NDc4NTEwOX0.GXE9_Euqb9Djzqj5euFpo6bb73gQgODr4b_CewYtt2M';
+var ADMIN_PW = 'caribplate-admin-2026';
+
+// ── STATE ─────────────────────────────────────────────────────────────
+var currentTab   = 'caribbean';
+var allFoods     = [];
+var editingId    = null;
+var showHidden   = false;
+
+// ── AUTH ──────────────────────────────────────────────────────────────
+function doAdminLogin() {
+  var pw = document.getElementById('adminPw').value;
+  if (pw === ADMIN_PW) {
+    document.getElementById('authScreen').style.display = 'none';
+    document.getElementById('adminApp').style.display = 'block';
+    loadFoods();
+  } else {
+    document.getElementById('authError').textContent = 'Incorrect password.';
+  }
+}
+
+function doLogout() {
+  document.getElementById('authScreen').style.display = 'flex';
+  document.getElementById('adminApp').style.display = 'none';
+  document.getElementById('adminPw').value = '';
+  document.getElementById('authError').textContent = '';
+}
+
+// ── TAB SWITCHING ─────────────────────────────────────────────────────
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('tabCaribBtn').classList.toggle('active', tab === 'caribbean');
+  document.getElementById('tabCommonBtn').classList.toggle('active', tab === 'common');
+  document.getElementById('searchBox').value = '';
+  loadFoods();
+}
+
+// ── LOAD FOODS ────────────────────────────────────────────────────────
+async function loadFoods() {
+  document.getElementById('foodTableBody').innerHTML = '<tr><td colspan="10" class="loading">Loading…</td></tr>';
+  document.getElementById('statusBar').textContent = 'Loading…';
+  var table = currentTab === 'caribbean' ? 'foods_caribbean' : 'foods_common';
+  try {
+    var res = await fetch(SB_URL + '/rest/v1/' + table + '?order=id.asc&select=*', {
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    allFoods = await res.json();
+    filterTable();
+  } catch(e) {
+    document.getElementById('foodTableBody').innerHTML = '<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--coral);">Could not load foods. Check your Supabase tables are set up (run supabase-setup.sql). Error: ' + e.message + '</td></tr>';
+    document.getElementById('statusBar').textContent = 'Error loading';
+  }
+}
+
+// ── FILTER TABLE ──────────────────────────────────────────────────────
+function filterTable() {
+  var q = document.getElementById('searchBox').value.toLowerCase();
+  var filtered = allFoods.filter(function(f) {
+    if (!showHidden && !f.active) return false;
+    if (!q) return true;
+    return (f.name||'').toLowerCase().includes(q) || (f.category||'').toLowerCase().includes(q);
+  });
+  renderTable(filtered);
+  document.getElementById('statusBar').textContent = filtered.length + ' of ' + allFoods.length + ' foods';
+}
+
+function renderTable(foods) {
+  if (!foods.length) {
+    document.getElementById('foodTableBody').innerHTML = '<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text3);">No foods found.</td></tr>';
+    return;
+  }
+  document.getElementById('foodTableBody').innerHTML = foods.map(function(f) {
+    return '<tr class="' + (f.active ? '' : 'inactive-row') + '" ondblclick="openEditModal(' + f.id + ')">' +
+      '<td class="td-name">' + esc(f.name) + '</td>' +
+      '<td class="td-cat">' + esc(f.category) + '</td>' +
+      '<td>' + esc(f.serving) + '</td>' +
+      '<td class="td-num">' + f.cal + '</td>' +
+      '<td class="td-num">' + (+f.p||0) + 'g</td>' +
+      '<td class="td-num">' + (+f.c||0) + 'g</td>' +
+      '<td class="td-num">' + (+f.f||0) + 'g</td>' +
+      '<td class="td-num">' + (+f.fi||0) + 'g</td>' +
+      '<td><span class="' + (f.active ? 'badge-active' : 'badge-hidden') + '">' + (f.active ? 'Active' : 'Hidden') + '</span></td>' +
+      '<td class="td-actions">' +
+        '<button class="btn-edit" onclick="event.stopPropagation();openEditModal(' + f.id + ')">Edit</button>' +
+        '<button class="btn-delete" onclick="event.stopPropagation();deleteFood(' + f.id + ',\'' + esc(f.name) + '\')">Delete</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── TOGGLE HIDDEN ─────────────────────────────────────────────────────
+function toggleShowHidden() {
+  showHidden = !showHidden;
+  document.getElementById('toggleHiddenBtn').textContent = showHidden ? 'Hide hidden' : 'Show hidden';
+  filterTable();
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'Add Food';
+  ['fName','fCat','fServing'].forEach(function(id) { document.getElementById(id).value = ''; });
+  ['fCal','fP','fC','fF','fFi'].forEach(function(id) { document.getElementById(id).value = ''; });
+  document.getElementById('fActive').value = 'true';
+  document.getElementById('foodModal').classList.add('open');
+  setTimeout(function() { document.getElementById('fName').focus(); }, 100);
+}
+
+function openEditModal(id) {
+  var food = allFoods.find(function(f) { return f.id === id; });
+  if (!food) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = 'Edit Food';
+  document.getElementById('fName').value    = food.name    || '';
+  document.getElementById('fCat').value     = food.category || '';
+  document.getElementById('fServing').value = food.serving  || '';
+  document.getElementById('fCal').value     = food.cal      || 0;
+  document.getElementById('fP').value       = food.p        || 0;
+  document.getElementById('fC').value       = food.c        || 0;
+  document.getElementById('fF').value       = food.f        || 0;
+  document.getElementById('fFi').value      = food.fi       || 0;
+  document.getElementById('fActive').value  = food.active ? 'true' : 'false';
+  document.getElementById('foodModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('foodModal').classList.remove('open');
+  editingId = null;
+}
+
+// ── SAVE FOOD ─────────────────────────────────────────────────────────
+async function saveFood() {
+  var name    = document.getElementById('fName').value.trim();
+  var cat     = document.getElementById('fCat').value.trim();
+  var serving = document.getElementById('fServing').value.trim();
+  var cal     = parseInt(document.getElementById('fCal').value) || 0;
+  var p       = parseFloat(document.getElementById('fP').value)  || 0;
+  var c       = parseFloat(document.getElementById('fC').value)  || 0;
+  var f       = parseFloat(document.getElementById('fF').value)  || 0;
+  var fi      = parseFloat(document.getElementById('fFi').value) || 0;
+  var active  = document.getElementById('fActive').value === 'true';
+
+  if (!name || !cat || !serving || !cal) { toast('⚠️ Name, category, serving and calories are required.'); return; }
+
+  var table   = currentTab === 'caribbean' ? 'foods_caribbean' : 'foods_common';
+  var payload = { name:name, category:cat, serving:serving, cal:cal, p:p, c:c, f:f, fi:fi, active:active };
+  var url     = SB_URL + '/rest/v1/' + table;
+  var method  = 'POST';
+
+  if (editingId) {
+    url    = url + '?id=eq.' + editingId;
+    method = 'PATCH';
+  }
+
+  try {
+    var res = await fetch(url, {
+      method: method,
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SB_KEY,
+        'Authorization': 'Bearer ' + SB_KEY,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status + ': ' + await res.text());
+    closeModal();
+    toast(editingId ? '✅ Food updated!' : '✅ Food added!');
+    loadFoods();
+  } catch(e) {
+    toast('❌ Save failed: ' + e.message);
+  }
+}
+
+// ── DELETE FOOD ───────────────────────────────────────────────────────
+async function deleteFood(id, name) {
+  if (!confirm('Delete "' + name + '"?\n\nThis cannot be undone.')) return;
+  var table = currentTab === 'caribbean' ? 'foods_caribbean' : 'foods_common';
+  try {
+    var res = await fetch(SB_URL + '/rest/v1/' + table + '?id=eq.' + id, {
+      method: 'DELETE',
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    toast('🗑️ "' + name + '" deleted.');
+    loadFoods();
+  } catch(e) {
+    toast('❌ Delete failed: ' + e.message);
+  }
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────
+var _toastTimer;
+function toast(msg) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(function() { el.classList.remove('show'); }, 2800);
+}
+
+// Enter key on auth screen
+document.getElementById('adminPw').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doAdminLogin();
+});
+</script>
+</body>
+</html>
