@@ -1,5 +1,4 @@
 const https = require('https');
-
 exports.handler = async function(event) {
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -12,15 +11,12 @@ exports.handler = async function(event) {
       body: ''
     };
   }
-
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
-
-  const apiKey    = process.env.MAILCHIMP_API_KEY;
+  const apiKey     = process.env.MAILCHIMP_API_KEY;
   const audienceId = process.env.MAILCHIMP_AUDIENCE_ID;
-  const server    = process.env.MAILCHIMP_SERVER; // us11
-
+  const server     = process.env.MAILCHIMP_SERVER;
   if (!apiKey || !audienceId || !server) {
     return {
       statusCode: 500,
@@ -28,9 +24,7 @@ exports.handler = async function(event) {
       body: JSON.stringify({ error: 'Mailchimp not configured' })
     };
   }
-
   const { email, firstName, lastName, tags } = JSON.parse(event.body || '{}');
-
   if (!email) {
     return {
       statusCode: 400,
@@ -38,17 +32,14 @@ exports.handler = async function(event) {
       body: JSON.stringify({ error: 'Email required' })
     };
   }
-
   const memberData = JSON.stringify({
     email_address: email,
     status: 'subscribed',
     merge_fields: {
-      FNAME: firstName || '',
-      LNAME: lastName  || ''
+      FNAME: firstName || ''
     },
     tags: tags || ['app-user']
   });
-
   return new Promise((resolve) => {
     const options = {
       hostname: `${server}.api.mailchimp.com`,
@@ -60,14 +51,12 @@ exports.handler = async function(event) {
         'Content-Length': Buffer.byteLength(memberData)
       }
     };
-
     const req = https.request(options, (res) => {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
-        // 200 = added, 400 with "Member Exists" = already subscribed (both OK)
         const json = JSON.parse(data);
-        if (res.statusCode === 200 || res.statusCode === 400 && json.title === 'Member Exists') {
+        if (res.statusCode === 200 || (res.statusCode === 400 && json.title === 'Member Exists')) {
           resolve({
             statusCode: 200,
             headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' },
@@ -82,7 +71,6 @@ exports.handler = async function(event) {
         }
       });
     });
-
     req.on('error', (err) => {
       resolve({
         statusCode: 500,
@@ -90,7 +78,6 @@ exports.handler = async function(event) {
         body: JSON.stringify({ error: err.message })
       });
     });
-
     req.write(memberData);
     req.end();
   });
