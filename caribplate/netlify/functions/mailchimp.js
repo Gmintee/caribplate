@@ -35,10 +35,7 @@ exports.handler = async function(event) {
   const memberData = JSON.stringify({
     email_address: email,
     status: 'subscribed',
-    merge_fields: {
-      FNAME: firstName || ''
-    },
-    tags: tags || ['app-user']
+        tags: tags || ['app-user']
   });
   return new Promise((resolve) => {
     const options = {
