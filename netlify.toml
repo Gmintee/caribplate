@@ -1,7 +1,15 @@
 [build]
   base = "caribplate"
-  publish = "." [build.environment]
+  publish = "."
+
+[build.environment]
   SECRETS_SCAN_OMIT_PATHS = "netlify/functions/claude.js"
 
 [functions]
   directory = "netlify/functions"
+
+[functions."claude"]
+  timeout = 120
+
+[functions."mailchimp"]
+  timeout = 30
