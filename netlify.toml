@@ -3,7 +3,7 @@
   publish = "."
 
 [build.environment]
-  SECRETS_SCAN_OMIT_PATHS = "netlify/functions/claude.js"
+  SECRETS_SCAN_OMIT_PATHS = "netlify/functions/claude.js,carib-plate-admin.html,carib-plate-app.html"
 
 [functions]
   directory = "netlify/functions"
