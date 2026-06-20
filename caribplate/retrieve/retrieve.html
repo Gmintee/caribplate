@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retrieve Your Meal Plan — Carib Plate</title>
+<link rel="icon" type="image/png" href="../favicon.png">
+<link rel="shortcut icon" href="../favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --forest: #1B3A2D;
+    --forest-mid: #264D3B;
+    --gold: #C8922A;
+    --gold-light: #F0C96A;
+    --cream: #FAF6EE;
+    --cream-dark: #F9F4E8;
+    --teal: #2E8B70;
+    --teal-light: #4ECBA3;
+    --text: #1C1A16;
+    --muted: #6B6456;
+    --white: #ffffff;
+    --radius: 16px;
+    --shadow: 0 8px 40px rgba(27,58,45,0.12);
+    --shadow-lg: 0 20px 60px rgba(27,58,45,0.18);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 40px 20px;
+  }
+
+  .wrap { max-width: 680px; margin: 0 auto; }
+
+  .header { text-align: center; margin-bottom: 28px; }
+
+  .header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(24px, 4vw, 32px);
+    color: var(--forest);
+    margin-bottom: 8px;
+  }
+
+  .header p { color: var(--muted); font-size: 14px; }
+
+  .card {
+    background: var(--white);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 32px;
+    margin-bottom: 24px;
+  }
+
+  .form-group { margin-bottom: 16px; }
+
+  .form-group label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 7px;
+  }
+
+  .form-group input {
+    width: 100%;
+    padding: 13px 16px;
+    border: 1.5px solid var(--cream-dark);
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    color: var(--text);
+    background: var(--cream);
+    outline: none;
+  }
+
+  .form-group input:focus { border-color: var(--teal); background: white; }
+
+  .submit-btn {
+    width: 100%;
+    padding: 15px;
+    background: linear-gradient(135deg, var(--teal) 0%, var(--forest) 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .submit-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+  .submit-btn .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+  .submit-btn.loading .spinner { display: block; }
+  .submit-btn.loading .btn-text { display: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-msg {
+    display: none;
+    background: #FDEDED;
+    border: 1px solid #F5C2C2;
+    color: #9B2C2C;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    margin-top: 14px;
+  }
+  .error-msg.show { display: block; }
+
+  /* Plan output */
+  #planOutput { display: none; }
+  #planOutput.show { display: block; }
+
+  .plan-header {
+    background: linear-gradient(135deg, var(--forest) 0%, var(--forest-mid) 100%);
+    padding: 24px 28px;
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+
+  .plan-header-top {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    flex-wrap: wrap; gap: 14px; margin-bottom: 16px;
+  }
+
+  .plan-name { font-family: 'Playfair Display', serif; color: white; font-size: 22px; }
+  .plan-sub { color: rgba(255,255,255,0.6); font-size: 13px; margin-top: 4px; }
+
+  .action-btn {
+    padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: none; font-family: 'DM Sans', sans-serif;
+    background: var(--gold); color: white;
+  }
+
+  .week-nav {
+    display: flex; gap: 8px; padding: 16px 28px 0; flex-wrap: wrap; background: var(--cream);
+  }
+
+  .week-btn {
+    padding: 8px 16px; border-radius: 100px; border: 1.5px solid var(--cream-dark);
+    background: white; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+  }
+  .week-btn.active { background: var(--forest); color: white; border-color: var(--forest); }
+
+  .days-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px; padding: 16px 28px 28px; background: var(--cream);
+    border-radius: 0 0 var(--radius) var(--radius);
+  }
+
+  .day-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+
+  .day-card-head {
+    background: var(--forest); padding: 10px 14px; display: flex;
+    justify-content: space-between; align-items: center;
+  }
+
+  .day-num { font-size: 10px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.8px; }
+  .day-name { font-family: 'Playfair Display', serif; color: white; font-size: 15px; }
+  .day-cal-badge { background: rgba(200,146,42,0.2); color: var(--gold-light); font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 100px; }
+
+  .day-meals { padding: 12px 14px; }
+  .meal-row { padding: 7px 0; border-bottom: 1px solid var(--cream); }
+  .meal-row:last-child { border-bottom: none; }
+  .meal-label { font-size: 9px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+  .meal-food { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 1px; }
+  .meal-detail { font-size: 10px; color: var(--muted); }
+
+  .back-link {
+    display: block; text-align: center; margin-top: 20px; font-size: 13px;
+    color: var(--muted); text-decoration: none;
+  }
+  .back-link:hover { color: var(--teal); }
+
+  .plan-list-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; border: 1.5px solid var(--cream-dark); border-radius: 10px;
+    margin-bottom: 10px; cursor: pointer; transition: border-color 0.2s, background 0.2s;
+  }
+  .plan-list-item:hover { border-color: var(--teal); background: var(--cream); }
+  .plan-list-item:last-child { margin-bottom: 0; }
+
+  .plan-list-date { font-size: 12px; color: var(--muted); margin-bottom: 3px; }
+  .plan-list-summary { font-size: 14px; font-weight: 600; color: var(--text); }
+  .plan-list-arrow { color: var(--teal); font-size: 18px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="header">
+    <h1>Retrieve Your Meal Plan</h1>
+    <p>Enter the email you used at checkout to view your 30-day plan again.</p>
+  </div>
+
+  <div class="card" id="formCard">
+    <div class="form-group">
+      <label>Email Address</label>
+      <input type="email" id="retrieveEmail" placeholder="your@email.com">
+    </div>
+    <button class="submit-btn" id="retrieveBtn" onclick="retrievePlan()">
+      <div class="spinner"></div>
+      <span class="btn-text">Find My Plan →</span>
+    </button>
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <div id="plansListCard" class="card" style="display:none;">
+    <h2 style="font-family:'Playfair Display',serif;font-size:20px;color:var(--forest);margin-bottom:6px;">Your Saved Plans</h2>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:18px;">Showing your most recent 5 plans · click one to view</p>
+    <div id="plansList"></div>
+  </div>
+
+  <div id="planOutput">
+    <a href="#" onclick="backToList(); return false;" style="display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);text-decoration:none;margin-bottom:14px;">← Back to my plans</a>
+    <div class="plan-header">
+      <div class="plan-header-top">
+        <div>
+          <div class="plan-name" id="planTitle">Your Meal Plan</div>
+          <div class="plan-sub" id="planSub"></div>
+        </div>
+        <button class="action-btn" onclick="downloadPDF()">📄 Download PDF</button>
+      </div>
+    </div>
+    <div class="week-nav" id="weekNav"></div>
+    <div class="days-grid" id="daysGrid"></div>
+  </div>
+
+  <a href="/Mealplan/" class="back-link">← Back to meal planner</a>
+</div>
+
+<script>
+  let currentPlan = null;
+  let currentName = '';
+  let allPlans = [];
+  const dayNames = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+  async function retrievePlan() {
+    const email = document.getElementById('retrieveEmail').value.trim();
+    const errorEl = document.getElementById('errorMsg');
+    errorEl.classList.remove('show');
+
+    if (!email || !email.includes('@')) {
+      errorEl.textContent = 'Please enter a valid email address.';
+      errorEl.classList.add('show');
+      return;
+    }
+
+    const btn = document.getElementById('retrieveBtn');
+    btn.classList.add('loading');
+    btn.disabled = true;
+
+    try {
+      const response = await fetch('/.netlify/functions/get-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email })
+      });
+      const result = await response.json();
+
+      if (!response.ok || result.error) {
+        errorEl.textContent = response.status === 404
+          ? 'No plan found for that email. Double-check the address you used at checkout.'
+          : 'Something went wrong. Please try again.';
+        errorEl.classList.add('show');
+        btn.classList.remove('loading');
+        btn.disabled = false;
+        return;
+      }
+
+      allPlans = result.plans;
+      renderPlansList(allPlans);
+
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    } catch (err) {
+      errorEl.textContent = 'Could not connect. Please try again.';
+      errorEl.classList.add('show');
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    }
+  }
+
+  function renderPlansList(plans) {
+    document.getElementById('formCard').style.display = 'none';
+    document.getElementById('plansListCard').style.display = 'block';
+    document.getElementById('planOutput').classList.remove('show');
+
+    document.getElementById('plansList').innerHTML = plans.map((p, i) => {
+      const date = new Date(p.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      const summary = `${p.meal_type || 'Balanced'} · ${p.calorie_target || p.plan_data.targetCalories} cal/day · ${p.country || ''}`;
+      return `<div class="plan-list-item" onclick="selectPlan(${i})">
+        <div>
+          <div class="plan-list-date">Generated ${date}</div>
+          <div class="plan-list-summary">${summary}</div>
+        </div>
+        <div class="plan-list-arrow">→</div>
+      </div>`;
+    }).join('');
+  }
+
+  function selectPlan(index) {
+    const row = allPlans[index];
+    currentPlan = row.plan_data;
+    currentName = row.first_name || 'Your';
+
+    document.getElementById('plansListCard').style.display = 'none';
+    renderPlan(currentPlan, currentName);
+  }
+
+  function backToList() {
+    document.getElementById('planOutput').classList.remove('show');
+    document.getElementById('plansListCard').style.display = 'block';
+  }
+
+  function renderPlan(plan, name) {
+    document.getElementById('planOutput').classList.add('show');
+    document.getElementById('planTitle').textContent = `${name}'s 30-Day Meal Plan`;
+    document.getElementById('planSub').textContent = `${plan.dietType || 'Balanced'} · ${plan.targetCalories} cal/day`;
+
+    const weekNav = document.getElementById('weekNav');
+    weekNav.innerHTML = ['Week 1 (Days 1–7)','Week 2 (Days 8–14)','Week 3 (Days 15–21)','Week 4 (Days 22–28)','Days 29–30'].map((w,i) =>
+      `<button class="week-btn ${i===0?'active':''}" onclick="showWeek(${i+1})">${w}</button>`
+    ).join('');
+    renderWeekDays(plan, 0, 7);
+  }
+
+  function showWeek(week) {
+    document.querySelectorAll('.week-btn').forEach((b,i) => b.classList.toggle('active', i+1===week));
+    const start = (week - 1) * 7;
+    const end = Math.min(start + 7, 30);
+    renderWeekDays(currentPlan, start, end - start);
+  }
+
+  function renderWeekDays(plan, start, count) {
+    const slice = plan.days.slice(start, start + count);
+    document.getElementById('daysGrid').innerHTML = slice.map((d, idx) => {
+      const dow = dayNames[(start + idx) % 7];
+      return `<div class="day-card">
+        <div class="day-card-head">
+          <div><div class="day-num">Day ${d.day}</div><div class="day-name">${dow}</div></div>
+          <div class="day-cal-badge">${d.totalCal} cal</div>
+        </div>
+        <div class="day-meals">
+          <div class="meal-row"><div class="meal-label">🌅 Breakfast</div><div class="meal-food">${d.breakfast.food}</div><div class="meal-detail">${d.breakfast.detail} · ${d.breakfast.cal} cal</div></div>
+          <div class="meal-row"><div class="meal-label">☀️ Lunch</div><div class="meal-food">${d.lunch.food}</div><div class="meal-detail">${d.lunch.detail} · ${d.lunch.cal} cal</div></div>
+          <div class="meal-row"><div class="meal-label">🌙 Dinner</div><div class="meal-food">${d.dinner.food}</div><div class="meal-detail">${d.dinner.detail} · ${d.dinner.cal} cal</div></div>
+          <div class="meal-row"><div class="meal-label">🥭 Snack</div><div class="meal-food">${d.snack.food}</div><div class="meal-detail">${d.snack.detail} · ${d.snack.cal} cal</div></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function downloadPDF() {
+    if (!currentPlan) return;
+    let html = `<!DOCTYPE html><html><head><title>Carib Plate — Meal Plan<\/title>
+    <style>
+      body{font-family:Georgia,serif;max-width:900px;margin:40px auto;color:#1C1A16;padding:20px}
+      h1{font-size:26px;margin-bottom:4px;color:#1B3A2D}
+      .sub{font-size:14px;color:#888;margin-bottom:28px}
+      table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:13px}
+      th{background:#1B3A2D;color:#F0C96A;padding:10px 12px;text-align:left}
+      td{padding:10px 12px;border-bottom:1px solid #eee;vertical-align:top}
+      tr:nth-child(even) td{background:#FBF7F0}
+      .cal{font-weight:bold;color:#C8922A}
+      .detail{font-size:11px;color:#888;margin-top:2px}
+      .footer{margin-top:30px;font-size:12px;color:#aaa;text-align:center}
+    <\/style><\/head><body>
+    <h1>🌿 Carib Plate — 30-Day Meal Plan<\/h1>
+    <div class="sub">Prepared for ${currentName} · ${currentPlan.dietType || 'Balanced'} · ${currentPlan.country || ''} · Target: ${currentPlan.targetCalories} cal/day<\/div>
+    <table>
+      <tr><th>Day<\/th><th>Breakfast<\/th><th>Lunch<\/th><th>Dinner<\/th><th>Snack<\/th><th>Total Cal<\/th><\/tr>
+      ${currentPlan.days.map(d => `<tr>
+        <td><strong>Day ${d.day}<\/strong><\/td>
+        <td>${d.breakfast.food}<div class="detail">${d.breakfast.detail}<\/div><\/td>
+        <td>${d.lunch.food}<div class="detail">${d.lunch.detail}<\/div><\/td>
+        <td>${d.dinner.food}<div class="detail">${d.dinner.detail}<\/div><\/td>
+        <td>${d.snack.food}<div class="detail">${d.snack.detail}<\/div><\/td>
+        <td class="cal">${d.totalCal}<\/td>
+      <\/tr>`).join('')}
+    <\/table>
+    <div class="footer">Generated by Carib Plate · caribplate.app · ${new Date().toLocaleDateString()}<\/div>
+    <\/body><\/html>`;
+    const w = window.open('', '_blank');
+    w.document.write(html);
+    w.document.close();
+    w.print();
+  }
+
+  // Allow Enter key to submit
+  document.getElementById('retrieveEmail').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') retrievePlan();
+  });
+</script>
+
+</body>
+</html>
