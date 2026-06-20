@@ -1,6 +1,7 @@
 [build]
   base = "caribplate"
-  publish = "."
+  publish = "." [build.environment]
+  SECRETS_SCAN_OMIT_PATHS = "netlify/functions/claude.js"
 
 [functions]
   directory = "netlify/functions"
