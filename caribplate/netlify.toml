@@ -1,0 +1,33 @@
+[build]
+  base = "caribplate"
+  publish = "."
+
+[build.environment]
+  SECRETS_SCAN_ENABLED = "true"
+  SECRETS_SCAN_OMIT_KEYS = "SUPABASE_URL"
+
+[functions]
+  included_files = ["netlify/functions/**"]
+
+# --- PRE-LAUNCH: tracker app is closed until the Meal Tracker is ready ---
+# The "*" catches every version of the address: /carib-plate-app.html,
+# /carib-plate-app (no extension), and anything after it. Without the "*",
+# the extensionless version stayed open and quietly added people to Mailchimp.
+# To re-open the tracker at launch, delete this whole [[redirects]] block.
+[[redirects]]
+  from = "/carib-plate-app*"
+  to = "/"
+  status = 302
+  force = true
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+
+[functions."claude"]
+  timeout = 120
+
+[functions."mailchimp"]
+  timeout = 30
