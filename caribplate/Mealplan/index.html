@@ -913,6 +913,16 @@
         <div id="paypal-button-container"></div>
       </div>
 
+      <!-- Access Code Section (30-day only) -->
+      <div id="accessCodeSection" style="display:none;background:#F4F9F6;border:1.5px solid rgba(46,139,112,0.25);border-radius:12px;padding:16px 20px;margin-bottom:20px;">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:10px;font-weight:600;">Have an access code?</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <input type="text" id="accessCodeInput" placeholder="Enter code" autocomplete="off" spellcheck="false" style="flex:1;min-width:150px;padding:12px 16px;border:1.5px solid var(--cream-dark);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:15px;letter-spacing:2px;text-transform:uppercase;color:var(--text);background:white;outline:none;">
+          <button type="button" id="applyCodeBtn" onclick="applyAccessCode()" style="padding:12px 24px;border:none;border-radius:10px;background:var(--teal);color:white;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;">Apply</button>
+        </div>
+        <div id="accessCodeMsg" style="font-size:13px;margin-top:10px;display:none;font-weight:500;"></div>
+      </div>
+
       <div class="payment-banner" id="paymentBanner">✅ Payment confirmed! Click below to generate your 30-day plan.</div>
 
       <button class="submit-btn" id="generateBtn" onclick="handleGenerate()">
@@ -978,9 +988,12 @@
     if (typeof paypal === 'undefined') { paypalFallback(); return; }
     paypal.Buttons({
       createOrder: function(data, actions) {
-        return actions.order.create({
-          purchase_units: [{ amount: { value: '9.00' }, description: 'Carib Plate 30-Day Meal Plan' }]
-        });
+        // Attach the influencer referral (if any) to the payment itself, as a backup
+        // to the Supabase sales record.
+        var pu = { amount: { value: '9.00' }, description: 'Carib Plate 30-Day Meal Plan' };
+        var ref = (typeof cpGetReferral === 'function') ? cpGetReferral() : null;
+        if (ref) { pu.custom_id = ref; }
+        return actions.order.create({ purchase_units: [pu] });
       },
       onApprove: function(data, actions) {
         return actions.order.capture().then(function(details) {
@@ -1000,6 +1013,8 @@
   let selectedPlan = '3day';
   let selectedMealType = 'Balanced';
   let paypalPaid = false;
+  let codeUnlocked = false;   // true once a valid influencer access code is applied
+  let unlockedCode = '';      // the code that was applied, redeemed after generation
   let currentPlan = null;
   let currentWeek = 1;
 
@@ -1012,13 +1027,17 @@
   // ── PLAN SELECTION ── 
   function selectPlan(type) {
     selectedPlan = type;
+    const unlocked = paypalPaid || codeUnlocked;
     document.getElementById('opt3day').classList.toggle('selected', type === '3day');
     document.getElementById('opt30day').classList.toggle('selected', type === '30day');
-    document.getElementById('paypalSection').classList.toggle('show', type === '30day');
+    // Show PayPal for the 30-day plan, unless an access code has already unlocked it.
+    document.getElementById('paypalSection').classList.toggle('show', type === '30day' && !codeUnlocked);
+    // Show the access-code box for the 30-day plan.
+    document.getElementById('accessCodeSection').style.display = (type === '30day') ? 'block' : 'none';
     document.getElementById('btnText').textContent = type === '3day'
       ? '✨ Generate My Free 3-Day Plan'
-      : (paypalPaid ? '✨ Generate My 30-Day Plan' : 'Complete Payment to Generate →');
-    if (type === '30day' && !paypalPaid) {
+      : (unlocked ? '✨ Generate My 30-Day Plan' : 'Complete Payment to Generate →');
+    if (type === '30day' && !unlocked) {
       document.getElementById('generateBtn').disabled = true;
     } else {
       document.getElementById('generateBtn').disabled = false;
@@ -1042,7 +1061,7 @@
     if (!ln) { alert('Please enter your last name.'); return false; }
     if (!em || !em.includes('@')) { alert('Please enter a valid email address.'); return false; }
     if (!cal || cal < 800 || cal > 4000) { alert('Please enter a daily calorie target between 800 and 4000.'); return false; }
-    if (selectedPlan === '30day' && !paypalPaid) { alert('Please complete payment to generate your 30-day plan.'); return false; }
+    if (selectedPlan === '30day' && !paypalPaid && !codeUnlocked) { alert('Please complete payment, or enter a valid access code, to generate your 30-day plan.'); return false; }
     return true;
   }
 
@@ -1208,7 +1227,11 @@ Generate exactly ${count} days from day ${startDay}. Each meal should read like 
       const userEmail = document.getElementById('emailAddr').value.trim();
       const userFirst = document.getElementById('firstName').value.trim();
       const userLast  = document.getElementById('lastName').value.trim();
-      const mcTag     = selectedPlan === '30day' ? 'meal-plan-paid' : 'meal-plan-free';
+      // Tag: free 3-day sample, free influencer redemption, or a real paid sale.
+      let mcTag;
+      if (selectedPlan === '3day') { mcTag = 'meal-plan-free'; }
+      else if (codeUnlocked)       { mcTag = 'meal-plan-influencer'; }
+      else                         { mcTag = 'meal-plan-paid'; }
       try {
         const mcResponse = await fetch('/.netlify/functions/mailchimp', {
           method: 'POST',
@@ -1226,8 +1249,11 @@ Generate exactly ${count} days from day ${startDay}. Each meal should read like 
         console.error('Mailchimp plan signup error:', mcErr);
       }
 
-      // Save paid 30-day plan to Supabase for recovery if browser closes before download
+      // Save the 30-day plan to Supabase for recovery if the browser closes before download.
+      // Also records how it was unlocked (paid sale vs free influencer code) and, for paid
+      // sales, which influencer referral brought the customer.
       if (selectedPlan === '30day') {
+        const referral = (typeof cpGetReferral === 'function') ? cpGetReferral() : null;
         try {
           const saveResponse = await fetch('/.netlify/functions/save-plan', {
             method: 'POST',
@@ -1238,13 +1264,29 @@ Generate exactly ${count} days from day ${startDay}. Each meal should read like 
               planData: plan,
               country: country,
               mealType: mealType,
-              calorieTarget: calories
+              calorieTarget: calories,
+              source: codeUnlocked ? 'influencer_code' : 'paid',
+              referralCode: codeUnlocked ? null : referral
             })
           });
           const saveResult = await saveResponse.json();
           console.log('Plan saved to Supabase:', saveResult);
         } catch (saveErr) {
           console.error('Plan save error:', saveErr);
+        }
+
+        // If an access code unlocked this plan, consume it now (after a confirmed
+        // successful generation) so a timeout mid-generation can never burn a code.
+        if (codeUnlocked && unlockedCode) {
+          try {
+            await fetch('/.netlify/functions/access-code', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'redeem', code: unlockedCode, email: userEmail })
+            });
+          } catch (redeemErr) {
+            console.error('Access code redeem error:', redeemErr);
+          }
         }
       }
 
@@ -1494,6 +1536,89 @@ Generate exactly ${count} days from day ${startDay}. Each meal should read like 
     });
     if (choice === 'granted') {
       gtag('event', 'consent_granted');
+    }
+  }
+</script>
+
+<!-- ── INFLUENCER ACCESS CODE + REFERRAL ── -->
+<script>
+  // Capture an influencer referral code from the URL (?ref=NAME) and remember it
+  // for 30 days. First click wins: an existing, unexpired referral is not overwritten.
+  (function() {
+    try {
+      var ref = new URLSearchParams(window.location.search).get('ref');
+      if (ref) {
+        ref = ref.trim().toLowerCase().slice(0, 60);
+        if (ref) {
+          var THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+          var stored = null;
+          try { stored = JSON.parse(localStorage.getItem('cp_ref') || 'null'); } catch (e) {}
+          if (!stored || !stored.code || (Date.now() - stored.ts) > THIRTY_DAYS) {
+            localStorage.setItem('cp_ref', JSON.stringify({ code: ref, ts: Date.now() }));
+          }
+        }
+      }
+    } catch (e) { /* localStorage blocked — referral tracking simply skipped */ }
+  })();
+
+  // Read the active (unexpired) referral code. Returns null if none.
+  function cpGetReferral() {
+    try {
+      var stored = JSON.parse(localStorage.getItem('cp_ref') || 'null');
+      if (!stored || !stored.code) return null;
+      var THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+      if ((Date.now() - stored.ts) > THIRTY_DAYS) return null;
+      return stored.code;
+    } catch (e) { return null; }
+  }
+
+  function showCodeMsg(text, kind) {
+    var msg = document.getElementById('accessCodeMsg');
+    msg.textContent = text;
+    msg.style.display = 'block';
+    msg.style.color = (kind === 'ok') ? 'var(--teal)' : '#C0392B';
+  }
+
+  // Check an access code with the server. If valid, unlock the 30-day plan
+  // (the code is not consumed until the plan actually generates).
+  async function applyAccessCode() {
+    var input = document.getElementById('accessCodeInput');
+    var btn = document.getElementById('applyCodeBtn');
+    var code = input.value.trim().toUpperCase();
+    if (!code) { showCodeMsg('Please enter a code.', 'error'); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Checking…';
+    try {
+      var res = await fetch('/.netlify/functions/access-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'check', code: code })
+      });
+      var data = await res.json();
+      if (data.valid) {
+        codeUnlocked = true;
+        unlockedCode = code;
+        input.disabled = true;
+        btn.textContent = 'Applied ✓';
+        showCodeMsg('✅ Code accepted — your 30-day plan is unlocked. Fill in the form above and click Generate.', 'ok');
+        document.getElementById('paypalSection').classList.remove('show');
+        document.getElementById('generateBtn').disabled = false;
+        document.getElementById('btnText').textContent = '✨ Generate My 30-Day Plan';
+      } else {
+        codeUnlocked = false;
+        unlockedCode = '';
+        var reason = (data.reason === 'used')
+          ? 'This code has already been used.'
+          : 'That code is not valid.';
+        showCodeMsg('❌ ' + reason, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Apply';
+      }
+    } catch (e) {
+      showCodeMsg('Could not check the code just now. Please try again.', 'error');
+      btn.disabled = false;
+      btn.textContent = 'Apply';
     }
   }
 </script>
