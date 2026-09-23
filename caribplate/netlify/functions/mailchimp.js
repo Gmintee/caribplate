@@ -23,7 +23,8 @@ function makeRequest(options, body) {
 // tags automatically the first time they're used — no manual setup needed.
 const LABEL_MAP = {
   'meal-plan-free': 'free-lead',
-  'meal-plan-paid': 'paid-customer'
+  'meal-plan-paid': 'paid-customer',
+  'meal-plan-influencer': 'influencer'
 };
 
 exports.handler = async function(event) {
