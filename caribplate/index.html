@@ -1429,5 +1429,28 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
   }
 </script>
 
+<!-- ── INFLUENCER REFERRAL CAPTURE ── -->
+<script>
+  // If a visitor arrives from an influencer link (caribplate.app/?ref=NAME), remember
+  // that referral for 30 days. It is read on the meal-plan page when they buy the
+  // 30-day plan, so the sale can be credited to the right influencer. First click wins.
+  (function() {
+    try {
+      var ref = new URLSearchParams(window.location.search).get('ref');
+      if (ref) {
+        ref = ref.trim().toLowerCase().slice(0, 60);
+        if (ref) {
+          var THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+          var stored = null;
+          try { stored = JSON.parse(localStorage.getItem('cp_ref') || 'null'); } catch (e) {}
+          if (!stored || !stored.code || (Date.now() - stored.ts) > THIRTY_DAYS) {
+            localStorage.setItem('cp_ref', JSON.stringify({ code: ref, ts: Date.now() }));
+          }
+        }
+      }
+    } catch (e) { /* localStorage blocked — referral tracking simply skipped */ }
+  })();
+</script>
+
 </body>
 </html>
