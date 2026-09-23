@@ -26,7 +26,7 @@ exports.handler = async function(event) {
     };
   }
 
-  const { email, firstName, planData, country, mealType, calorieTarget } = JSON.parse(event.body || '{}');
+  const { email, firstName, planData, country, mealType, calorieTarget, referralCode, source } = JSON.parse(event.body || '{}');
   if (!email || !planData) {
     return {
       statusCode: 400,
@@ -41,7 +41,12 @@ exports.handler = async function(event) {
     plan_data: planData,
     country: country || '',
     meal_type: mealType || '',
-    calorie_target: calorieTarget || null
+    calorie_target: calorieTarget || null,
+    // Influencer/referral tracking. source is 'paid' for a normal $9 sale or
+    // 'influencer_code' for a free access-code redemption. referral_code holds
+    // the influencer whose link brought a PAID customer (null for code redemptions).
+    referral_code: referralCode || null,
+    source: source || 'paid'
   });
 
   const url = new URL(supabaseUrl + '/rest/v1/meal_plans');
