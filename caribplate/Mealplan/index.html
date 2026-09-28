@@ -1148,6 +1148,32 @@
       return JSON.parse(raw.replace(/```json|```/g, '').trim());
     }
 
+    // ── LEFTOVER REPEATS ──
+    // Real people cook once and eat the same meal again a couple of days later.
+    // For each 7-day stretch of the plan, make one lunch and one dinner repeat,
+    // two days apart, with no "leftovers" label — it just shows as the same meal.
+    function applyLeftoverRepeats(days) {
+      for (let start = 0; start < days.length; start += 7) {
+        const week = days.slice(start, start + 7);
+
+        // Lunch repeat: day 1 of the week -> day 3 of the week (2 days apart)
+        if (week.length >= 3) {
+          const source = week[0];
+          const target = week[2];
+          target.lunch = { food: source.lunch.food, cal: source.lunch.cal, detail: source.lunch.detail };
+          target.totalCal = target.breakfast.cal + target.lunch.cal + target.dinner.cal + target.snack.cal;
+        }
+
+        // Dinner repeat: day 4 of the week -> day 6 of the week (2 days apart)
+        if (week.length >= 6) {
+          const source = week[3];
+          const target = week[5];
+          target.dinner = { food: source.dinner.food, cal: source.dinner.cal, detail: source.dinner.detail };
+          target.totalCal = target.breakfast.cal + target.lunch.cal + target.dinner.cal + target.snack.cal;
+        }
+      }
+    }
+
     function makePrompt(name, calories, mealType, mealTypeInstructions, country, startDay, count, usedFoods) {
       return `You are a ${country} home cook and nutritionist. Generate days ${startDay} to ${startDay + count - 1} of a meal plan for ${name}.
 
@@ -1163,7 +1189,7 @@ CRITICAL - REALISTIC PAIRINGS ONLY:
 Only combine foods the way people in ${country} actually eat them at home. Each meal should be something a real person would genuinely cook and serve together — not just a list of ingredients assembled randomly.
 
 Use these as a guide for authentic combinations:
-- Breakfast: a traditional starch/protein combo eaten in ${country} (e.g. fried bake & saltfish, porridge, provision & protein, eggs & bake)
+- Breakfast: EITHER a traditional starch/protein combo eaten in ${country} (e.g. fried bake & saltfish, porridge, provision & protein) OR an everyday egg-and-bread breakfast (see EGG BREAKFAST RULE below). Do not use fried bake or coconut bake for every breakfast — vary it across the week, and use the egg-and-bread breakfast at least 2-3 times over any 7-day stretch.
 - Lunch (the main meal): a starch + a protein (stewed/curried/grilled meat or fish) + a vegetable side + a small serving of beans/peas (e.g. red beans, pigeon peas, black-eyed peas) — served together as one cohesive plate
 - Dinner: lighter than lunch — grilled/steamed protein with vegetables, soup, or a smaller version of a lunch-style plate
 - Snacks: whole fruit or a small traditional snack item — not a full dish
@@ -1186,6 +1212,7 @@ SPECIFIC FOOD RULES:
 - PORRIDGE: any porridge (cornmeal, oats, etc.) must be served alone or with a piece of fruit on the side only. NEVER pair porridge with bread, bulla, bake, or any other starch.
 - CURRY MEALS: if the protein is curried (curry chicken, curry goat, curry shrimp, curry duck, etc.), the ENTIRE meal must be curry-style. Pair the curry protein with 2-3 curry/choka sides such as: curry potato, curry channa (chickpeas), pumpkin choka, bhagi/spinach choka, curry mango, or curry bodi (bora/long bean). Serve over rice, or with dhalpuri or paratha roti. Do NOT mix a curry protein with plain steamed/stewed sides like plain stewed pumpkin or plain rice and peas — everything alongside a curry must also be curry-style or a roti.
 - MACKEREL: only use SALTED mackerel. Present it as either "Tin Mackerel" (canned) OR "Mackerel Rundown" (cooked in coconut milk) — these are two different dishes and must never be combined into one name like "Tin Mackerel Rundown."
+- EGG BREAKFAST RULE: when using the egg-and-bread breakfast, build it from: (a) eggs — "Fried Eggs" or "Boiled Eggs"; (b) ONE of — "Bacon", "Ham", "Vienna Sausages in Onions and Tomatoes", or "Cheddar Cheese" (never call it "New Zealand Cheddar" or any brand name, just "Cheddar Cheese"); (c) "Whole Wheat Bread" or "White Bread". Name the food field by joining these plainly, e.g. "Fried Eggs, Bacon and Whole Wheat Bread" or "Boiled Eggs, Cheddar Cheese and White Bread". Use these approximate calories when sizing the meal: fried egg ~90 cal each, boiled egg ~70 cal each, bacon (2 slices) ~90 cal, ham (2oz) ~120 cal, vienna sausages in onions and tomatoes (5 sausages) ~260 cal, cheddar cheese (1oz slice) ~110 cal, whole wheat bread (2 slices) ~140 cal, white bread (2 slices) ~160 cal. Adjust portions up or down to help hit the day's calorie target, and state the final portions in the "detail" field the same way other meals do.
 
 ${mealType === 'Seafood Only' ? 'SEAFOOD VARIETY: Do not put fish/seafood in every single meal every day. Across the days, vary it — some days have canned fish (tuna, salmon, sardine, or mackerel) at breakfast with one side and a vegetarian dinner; other days have a vegetarian breakfast and canned fish with one side at dinner. Lunch should remain fish/seafood-based throughout. Aim for reasonable variety across the week, not a strict daily pattern.' : ''}
 
@@ -1213,6 +1240,8 @@ Generate exactly ${count} days from day ${startDay}. Each meal should read like 
       } else {
         plan = await callClaude(makePrompt(name, calories, mealType, mealTypeInstructions, country, 1, days, ''), 2000);
       }
+
+      applyLeftoverRepeats(plan.days);
 
       clearInterval(msgInterval);
       cpClearGuard();
