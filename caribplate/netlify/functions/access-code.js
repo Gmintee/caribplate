@@ -20,8 +20,8 @@ const CORS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
-// Influencer access codes. Uses the SAME Supabase connection (SUPABASE_URL +
-// SUPABASE_ANON_KEY) as save-plan.js. Two actions:
+// Influencer access codes. Uses the Supabase connection (SUPABASE_URL +
+// SUPABASE_SERVICE_KEY) (server-side service key, bypasses RLS). Two actions:
 //   action: "check"  -> is this code valid and unused? (does NOT consume it)
 //   action: "redeem" -> mark the code used, once, after the plan has generated
 // Splitting check from redeem means a failed/timed-out generation never burns
@@ -35,7 +35,7 @@ exports.handler = async function(event) {
   }
 
   const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_ANON_KEY;
+  const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
   if (!supabaseUrl || !supabaseKey) {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: 'Supabase not configured' }) };
   }
