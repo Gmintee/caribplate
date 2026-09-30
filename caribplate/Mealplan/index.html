@@ -80,6 +80,7 @@
   .hero-logo img {
     height: 52px;
     width: auto;
+    border-radius: 10px;
   }
 
   .hero-logo-icon {
@@ -813,7 +814,7 @@
 <!-- ── HERO ── -->
 <section class="hero">
   <div class="hero-logo">
-    <img src="/Carib_Plate_Logo.png" alt="Carib Plate" style="height:48px;width:auto;" onerror="this.style.display='none';document.getElementById('fallback-logo').style.display='flex'">
+    <img src="/Carib_Plate_Logo.png" alt="Carib Plate" style="height:48px;width:auto;border-radius:10px;" onerror="this.style.display='none';document.getElementById('fallback-logo').style.display='flex'">
     <div id="fallback-logo" style="display:none;align-items:center;gap:10px">
       <div class="hero-logo-icon">🌿</div>
       <span class="hero-logo-text">Carib Plate</span>
@@ -1567,6 +1568,17 @@ Generate exactly ${count} days from day ${startDay}. Each meal should read like 
       gtag('event', 'consent_granted');
     }
   }
+</script>
+
+<!-- ── PRE-FILL CALORIES FROM THE BMI CALCULATOR (?calories=1650) ── -->
+<script>
+  (function() {
+    try {
+      var c = parseInt(new URLSearchParams(window.location.search).get('calories'), 10);
+      var box = document.getElementById('calories');
+      if (box && c >= 800 && c <= 4000) { box.value = c; }
+    } catch (e) { /* ignore */ }
+  })();
 </script>
 
 <!-- ── INFLUENCER ACCESS CODE + REFERRAL ── -->
