@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BMI Calculator with Daily Calorie Estimate | Carib Plate</title>
+<meta name="description" content="Free BMI calculator for adults. Check where your BMI falls on the scale, then estimate your daily calories to use with a Caribbean 30-day meal plan.">
+<link rel="canonical" href="https://caribplate.app/bmi-calculator.html">
+<meta property="og:title" content="Free BMI Calculator with Daily Calorie Estimate | Carib Plate">
+<meta property="og:description" content="Check your BMI, then find your daily calorie target for a Caribbean meal plan.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://caribplate.app/Carib_Plate_Logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {"@type": "Question", "name": "What is a healthy BMI for adults?",
+     "acceptedAnswer": {"@type": "Answer", "text": "For adults, a BMI between 18.5 and 24.9 is generally considered the healthy range. Below 18.5 is underweight, 25 to 29.9 is overweight, and 30 or above is obese."}},
+    {"@type": "Question", "name": "How is BMI calculated?",
+     "acceptedAnswer": {"@type": "Answer", "text": "BMI is your weight in kilograms divided by your height in metres squared. In pounds and inches, multiply weight by 703 and divide by height squared."}},
+    {"@type": "Question", "name": "How many calories should I eat a day?",
+     "acceptedAnswer": {"@type": "Answer", "text": "It depends on your age, sex, height, weight and activity level. This calculator uses the Mifflin-St Jeor equation to estimate the calories you burn each day, then adjusts for your goal."}},
+    {"@type": "Question", "name": "Is BMI accurate for everyone?",
+     "acceptedAnswer": {"@type": "Answer", "text": "No. BMI is a screening guide and does not measure body fat directly. It can overstate risk for very muscular people and understate it for older adults who have lost muscle."}}
+  ]
+}
+</script>
+<style>
+  :root {
+    --forest: #1B3A2D;
+    --gold: #C8922A;
+    --teal: #2E8B70;
+    --teal-light: #4ECBA3;
+    --cream: #FAF6EE;
+    --cream-dark: #F0E9DA;
+    --coral: #D95F3B;
+    --orange: #E8873A;
+    --banana: #E8C23A;
+    --text: #1F2A24;
+    --text-soft: #5B6660;
+    --white: #FFFFFF;
+    --border: #DDD3BF;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  h1, h2, h3 { font-family: 'Playfair Display', Georgia, serif; color: var(--forest); line-height: 1.2; margin: 0; }
+  .topbar { background: var(--forest); padding: 14px 16px; }
+  .topbar a { color: var(--white); text-decoration: none; font-family: 'Playfair Display', Georgia, serif; font-weight: 700; font-size: 20px; }
+  .topbar a { display: inline-flex; align-items: center; gap: 10px; }
+  .logo-img { height: 36px; width: auto; border-radius: 8px; }
+  .topbar span { color: var(--gold); }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 32px 16px 56px; }
+  .hero h1 { font-size: clamp(28px, 6vw, 40px); margin-bottom: 10px; }
+  .hero p { margin: 0 0 24px; color: var(--text-soft); font-size: 17px; }
+
+  .card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px 20px;
+    margin-bottom: 20px;
+  }
+  .card h2 { font-size: 22px; margin-bottom: 4px; }
+  .step-label { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gold); margin-bottom: 6px; }
+  .hint { color: var(--text-soft); font-size: 14px; margin: 0 0 16px; }
+
+  .toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; margin-bottom: 18px; }
+  .toggle button {
+    border: 0; background: var(--white); color: var(--text-soft);
+    padding: 9px 18px; font: inherit; font-size: 14px; font-weight: 500; cursor: pointer; min-height: 40px;
+  }
+  .toggle button[aria-pressed="true"] { background: var(--forest); color: var(--white); }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field.full { grid-column: 1 / -1; }
+  label, .label { font-size: 13px; font-weight: 700; color: var(--forest); }
+  input, select {
+    font: inherit; font-size: 16px; padding: 11px 12px; min-height: 46px;
+    border: 1px solid var(--border); border-radius: 10px; background: var(--white); color: var(--text); width: 100%;
+  }
+  input:focus, select:focus, button:focus-visible, a:focus-visible { outline: 3px solid var(--teal-light); outline-offset: 1px; }
+  .inline { display: flex; gap: 10px; }
+  .inline > div { flex: 1; }
+  .sex-options { display: flex; gap: 10px; }
+  .sex-options label {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
+    border: 1px solid var(--border); border-radius: 10px; padding: 11px; min-height: 46px;
+    font-weight: 500; color: var(--text); cursor: pointer;
+  }
+  .sex-options input { width: auto; min-height: 0; accent-color: var(--teal); }
+  .sex-options label:has(input:checked) { border-color: var(--teal); background: #EAF6F1; }
+
+  .btn {
+    display: inline-block; border: 0; cursor: pointer; text-decoration: none; text-align: center;
+    background: var(--gold); color: var(--forest); font: inherit; font-weight: 700; font-size: 16px;
+    padding: 14px 24px; border-radius: 999px; min-height: 48px; margin-top: 18px; width: 100%;
+  }
+  .btn:hover { background: #D6A03A; }
+  .btn.secondary { background: var(--white); border: 2px solid var(--forest); color: var(--forest); margin-top: 10px; }
+  .btn.green { background: var(--forest); color: var(--white); }
+  .btn.green:hover { background: #24493A; }
+
+  .error { color: var(--coral); font-size: 14px; margin: 12px 0 0; font-weight: 500; }
+  .error:empty { display: none; }
+
+  .hidden { display: none !important; }
+
+  /* Results */
+  .bmi-figure { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 6px 0 4px; }
+  .bmi-num { font-family: 'Playfair Display', Georgia, serif; font-size: 56px; font-weight: 700; color: var(--forest); line-height: 1; }
+  .bmi-cat { font-size: 20px; font-weight: 700; }
+  .cat-under { color: #A8830F; }
+  .cat-healthy { color: var(--teal); }
+  .cat-over { color: #C26A1C; }
+  .cat-obese { color: var(--coral); }
+
+  .gauge { position: relative; margin: 64px 0 44px; }
+  .gauge-bar { display: flex; height: 22px; border-radius: 11px; overflow: hidden; }
+  .seg-under { width: 14%; background: var(--banana); }
+  .seg-healthy { width: 26%; background: var(--teal); }
+  .seg-over { width: 20%; background: var(--orange); }
+  .seg-obese { width: 40%; background: var(--coral); }
+  .marker {
+    position: absolute; top: -26px; left: 0; width: 0; height: 0;
+    transform: translateX(-50%); transition: left 0.6s ease;
+  }
+  .marker::before {
+    content: attr(data-value);
+    position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+    background: var(--forest); color: var(--white); font-size: 12px; font-weight: 700;
+    padding: 2px 8px; border-radius: 6px; white-space: nowrap;
+  }
+  .marker::after {
+    content: ''; position: absolute; top: 4px; left: -7px;
+    border-left: 7px solid transparent; border-right: 7px solid transparent; border-top: 9px solid var(--forest);
+  }
+  .marker-line { position: absolute; top: 26px; left: -1px; width: 3px; height: 22px; background: var(--forest); border-radius: 2px; transform: translateX(-50%) ; }
+  .ticks { position: relative; height: 18px; margin-top: 6px; font-size: 12px; color: var(--text-soft); }
+  .ticks span { position: absolute; transform: translateX(-50%); }
+  .legend { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; font-size: 13px; color: var(--text-soft); margin-top: 6px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+
+  .stat-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0 0; }
+  .stat { flex: 1 1 140px; background: var(--cream); border-radius: 12px; padding: 12px 14px; }
+  .stat b { display: block; font-size: 20px; color: var(--forest); }
+  .stat span { font-size: 13px; color: var(--text-soft); }
+
+  .note { background: #FFF6E0; border-left: 4px solid var(--gold); padding: 12px 14px; border-radius: 8px; font-size: 14px; margin-top: 14px; }
+
+  .cal-hero {
+    background: var(--forest); color: var(--white); border-radius: 14px; padding: 22px 20px; text-align: center; margin-top: 8px;
+  }
+  .cal-hero .small { font-size: 14px; color: rgba(255,255,255,0.75); }
+  .cal-hero .big { font-family: 'Playfair Display', Georgia, serif; font-size: 56px; font-weight: 700; color: var(--gold); line-height: 1.1; }
+  .cal-hero .unit { font-size: 15px; color: rgba(255,255,255,0.85); }
+
+  .cta { background: var(--cream-dark); border-radius: 14px; padding: 20px; margin-top: 18px; }
+  .cta h3 { font-size: 20px; margin-bottom: 6px; }
+  .cta p { margin: 0 0 4px; font-size: 15px; }
+
+  .faq h2 { font-size: 24px; margin-bottom: 14px; }
+  .faq h3 { font-size: 18px; margin: 18px 0 4px; }
+  .faq p { margin: 0; color: var(--text-soft); }
+  .disclaimer { font-size: 13px; color: var(--text-soft); margin-top: 24px; }
+  footer { text-align: center; font-size: 13px; color: var(--text-soft); padding: 0 16px 32px; }
+  footer a { color: var(--teal); }
+
+  @media (max-width: 480px) {
+    .grid { grid-template-columns: 1fr; }
+    .card { padding: 20px 16px; }
+    .bmi-num { font-size: 48px; }
+    .legend { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) { .marker { transition: none; } }
+</style>
+</head>
+<body>
+
+<div class="topbar"><a href="https://caribplate.app/"><img src="https://caribplate.app/Carib_Plate_Logo.png" alt="" class="logo-img" onerror="this.style.display='none'">Carib <span>Plate</span></a></div>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>BMI Calculator with Daily Calorie Estimate</h1>
+    <p>Find your BMI, see where you fall on the scale, then work out the daily calories to use in your Caribbean meal plan. Free, and nothing you enter is saved or sent anywhere.</p>
+  </section>
+
+  <!-- STEP 1 -->
+  <section class="card" aria-labelledby="step1">
+    <div class="step-label">Step 1</div>
+    <h2 id="step1">Check your BMI</h2>
+    <p class="hint">For adults aged 18 and over.</p>
+
+    <div class="toggle" role="group" aria-label="Units">
+      <button type="button" id="btnUS" aria-pressed="true">US units (lb, ft)</button>
+      <button type="button" id="btnMetric" aria-pressed="false">Metric (kg, cm)</button>
+    </div>
+
+    <form id="bmiForm" novalidate>
+      <div class="grid">
+        <div class="field">
+          <label for="age">Age</label>
+          <input id="age" type="number" inputmode="numeric" min="18" max="110" placeholder="Years" autocomplete="off">
+        </div>
+        <div class="field">
+          <span class="label" id="sexLabel">Sex</span>
+          <div class="sex-options" role="radiogroup" aria-labelledby="sexLabel">
+            <label><input type="radio" name="sex" value="female"> Female</label>
+            <label><input type="radio" name="sex" value="male"> Male</label>
+          </div>
+        </div>
+
+        <div class="field full" id="heightUS">
+          <span class="label" id="hLabelUS">Height</span>
+          <div class="inline" role="group" aria-labelledby="hLabelUS">
+            <div><input id="ft" type="number" inputmode="numeric" min="3" max="8" placeholder="Feet" aria-label="Feet"></div>
+            <div><input id="inch" type="number" inputmode="decimal" min="0" max="11.9" step="0.1" placeholder="Inches" aria-label="Inches"></div>
+          </div>
+        </div>
+        <div class="field full hidden" id="heightMetric">
+          <label for="cm">Height (cm)</label>
+          <input id="cm" type="number" inputmode="decimal" min="90" max="250" step="0.1" placeholder="Centimetres">
+        </div>
+
+        <div class="field full">
+          <label for="weight" id="weightLabel">Weight (lb)</label>
+          <input id="weight" type="number" inputmode="decimal" min="1" step="0.1" placeholder="Pounds">
+        </div>
+      </div>
+      <p class="error" id="err1" role="alert"></p>
+      <button class="btn" type="submit">Calculate my BMI</button>
+    </form>
+
+    <div id="bmiResult" class="hidden" aria-live="polite">
+      <hr style="border:0;border-top:1px solid var(--border);margin:24px 0 18px">
+      <div class="label">Your BMI</div>
+      <div class="bmi-figure">
+        <span class="bmi-num" id="bmiNum">0</span>
+        <span class="bmi-cat" id="bmiCat"></span>
+      </div>
+
+      <div class="gauge" aria-hidden="true">
+        <div class="gauge-bar">
+          <div class="seg-under"></div><div class="seg-healthy"></div><div class="seg-over"></div><div class="seg-obese"></div>
+        </div>
+        <div class="marker" id="marker" data-value=""><div class="marker-line"></div></div>
+        <div class="ticks">
+          <span style="left:0%">15</span>
+          <span style="left:14%">18.5</span>
+          <span style="left:40%">25</span>
+          <span style="left:60%">30</span>
+          <span style="left:100%">40</span>
+        </div>
+      </div>
+      <div class="legend">
+        <div><i style="background:var(--banana)"></i>Underweight: below 18.5</div>
+        <div><i style="background:var(--teal)"></i>Healthy: 18.5 to 24.9</div>
+        <div><i style="background:var(--orange)"></i>Overweight: 25 to 29.9</div>
+        <div><i style="background:var(--coral)"></i>Obese: 30 and above</div>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat"><b id="healthyRange">-</b><span>Healthy weight range for your height</span></div>
+        <div class="stat"><b id="toHealthy">-</b><span id="toHealthyLabel">Difference from healthy range</span></div>
+      </div>
+      <div class="note" id="bmiNote"></div>
+    </div>
+  </section>
+
+  <!-- STEP 2 -->
+  <section class="card hidden" id="step2Card" aria-labelledby="step2">
+    <div class="step-label">Step 2</div>
+    <h2 id="step2">Estimate your daily calories</h2>
+    <p class="hint">Uses the details you already entered. This is the number to enter in the Carib Plate meal planner.</p>
+    <form id="calForm" novalidate>
+      <div class="grid">
+        <div class="field full">
+          <label for="activity">Activity level</label>
+          <select id="activity">
+            <option value="">Choose one</option>
+            <option value="1.2">Sedentary: little or no exercise</option>
+            <option value="1.375">Light: exercise 1 to 3 days a week</option>
+            <option value="1.55">Moderate: exercise 3 to 5 days a week</option>
+            <option value="1.725">Active: exercise 6 to 7 days a week</option>
+            <option value="1.9">Very active: hard exercise daily or a physical job</option>
+          </select>
+        </div>
+        <div class="field full">
+          <label for="goal">Your goal</label>
+          <select id="goal">
+            <option value="">Choose one</option>
+            <option value="-500">Lose weight (about 0.5 kg or 1 lb a week)</option>
+            <option value="-250">Lose weight slowly (about 0.25 kg or 0.5 lb a week)</option>
+            <option value="0">Maintain my weight</option>
+            <option value="250">Gain weight slowly</option>
+          </select>
+        </div>
+      </div>
+      <p class="error" id="err2" role="alert"></p>
+      <button class="btn" type="submit">Estimate my daily calories</button>
+    </form>
+
+    <div id="calResult" class="hidden" aria-live="polite">
+      <div class="cal-hero">
+        <div class="small">Your daily calorie target</div>
+        <div class="big" id="calTarget">0</div>
+        <div class="unit">calories a day</div>
+      </div>
+      <div class="stat-row">
+        <div class="stat"><b id="bmrOut">0</b><span>BMR: calories your body burns at rest</span></div>
+        <div class="stat"><b id="tdeeOut">0</b><span>Maintenance: calories to stay the same weight</span></div>
+      </div>
+      <div class="note hidden" id="calNote"></div>
+
+      <div class="cta">
+        <h3>Now put it on a Caribbean plate</h3>
+        <p>Enter <strong id="ctaCal">0</strong> calories in the Carib Plate meal planner to get a 30-day meal plan built around doubles, pelau, callaloo, curry and the foods you actually eat. Try a free 3-day sample first.</p>
+        <a class="btn green" id="ctaLink" href="https://caribplate.app/mealplan">Get my Caribbean meal plan</a>
+        <button class="btn secondary" type="button" id="copyBtn">Copy my calorie number</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="card faq" aria-labelledby="faqTitle">
+    <h2 id="faqTitle">BMI and calories: common questions</h2>
+    <h3>What is a healthy BMI for adults?</h3>
+    <p>For adults, a BMI from 18.5 to 24.9 is generally considered the healthy range. Below 18.5 is underweight, 25 to 29.9 is overweight, and 30 or above is obese.</p>
+    <h3>How is BMI calculated?</h3>
+    <p>BMI is your weight in kilograms divided by your height in metres squared. In pounds and inches, multiply your weight by 703 and divide by your height in inches squared.</p>
+    <h3>How does this tool estimate daily calories?</h3>
+    <p>It uses the Mifflin-St Jeor equation, a widely used formula, to estimate the calories you burn at rest (your BMR). That figure is multiplied by your activity level to estimate maintenance calories, then adjusted up or down for your goal.</p>
+    <h3>How fast is it safe to lose weight?</h3>
+    <p>A gradual pace of about 0.25 to 0.5 kg (0.5 to 1 lb) a week is a common recommendation. Very low calorie intakes are not advised without medical supervision, so this calculator never goes below 1,200 calories a day for women or 1,500 for men.</p>
+    <h3>Is BMI accurate for everyone?</h3>
+    <p>No. BMI is a quick screening guide and does not measure body fat. It can overstate risk for very muscular people and understate it for older adults who have lost muscle. It also does not apply to anyone under 18, or to pregnant or breastfeeding women.</p>
+    <p class="disclaimer">This calculator gives general estimates for information only. It is not medical advice. Speak to a doctor or registered dietitian before making major changes to your eating, especially if you have a health condition.</p>
+  </section>
+</main>
+
+<footer>
+  &copy; <span id="yr"></span> Carib Plate. Calorie tracking and meal planning for Caribbean food. <a href="https://caribplate.app/">caribplate.app</a>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var MEAL_PLANNER_URL = 'https://caribplate.app/mealplan';
+
+  var units = 'us';
+  var state = { bmi: null, weightKg: null, heightCm: null, age: null, sex: null };
+
+  function $(id) { return document.getElementById(id); }
+  function num(id) { var v = parseFloat($(id).value); return isFinite(v) ? v : null; }
+  function round1(n) { return Math.round(n * 10) / 10; }
+  function commas(n) { return Math.round(n).toLocaleString('en-US'); }
+  $('yr').textContent = new Date().getFullYear();
+
+  // ----- Unit toggle (converts any values already typed) -----
+  function setUnits(next) {
+    if (next === units) return;
+    var wRaw = num('weight');
+    if (units === 'us') {
+      var ft = num('ft'), inch = num('inch');
+      var cmVal = (ft !== null || inch !== null) ? ((ft || 0) * 12 + (inch || 0)) * 2.54 : null;
+      $('cm').value = cmVal ? round1(cmVal) : '';
+      $('weight').value = wRaw ? round1(wRaw * 0.45359237) : '';
+    } else {
+      var cm = num('cm');
+      if (cm) {
+        var totalIn = cm / 2.54;
+        var f = Math.floor(totalIn / 12);
+        $('ft').value = f;
+        $('inch').value = round1(totalIn - f * 12);
+      } else { $('ft').value = ''; $('inch').value = ''; }
+      $('weight').value = wRaw ? round1(wRaw / 0.45359237) : '';
+    }
+    units = next;
+    var isUS = units === 'us';
+    $('heightUS').classList.toggle('hidden', !isUS);
+    $('heightMetric').classList.toggle('hidden', isUS);
+    $('weightLabel').textContent = isUS ? 'Weight (lb)' : 'Weight (kg)';
+    $('weight').placeholder = isUS ? 'Pounds' : 'Kilograms';
+    $('btnUS').setAttribute('aria-pressed', String(isUS));
+    $('btnMetric').setAttribute('aria-pressed', String(!isUS));
+    $('err1').textContent = '';
+    if (state.bmi !== null) { refreshHealthyRange(); }
+  }
+  $('btnUS').addEventListener('click', function () { setUnits('us'); });
+  $('btnMetric').addEventListener('click', function () { setUnits('metric'); });
+
+  // ----- BMI -----
+  function category(bmi) {
+    if (bmi < 18.5) return { name: 'Underweight', cls: 'cat-under' };
+    if (bmi < 25)   return { name: 'Healthy weight', cls: 'cat-healthy' };
+    if (bmi < 30)   return { name: 'Overweight', cls: 'cat-over' };
+    return { name: 'Obese', cls: 'cat-obese' };
+  }
+
+  function fmtWeight(kg) {
+    return units === 'us' ? commas(kg / 0.45359237) + ' lb' : round1(kg) + ' kg';
+  }
+
+  function refreshHealthyRange() {
+    var m = state.heightCm / 100;
+    var lo = 18.5 * m * m, hi = 24.9 * m * m;
+    $('healthyRange').textContent = fmtWeight(lo) + ' to ' + fmtWeight(hi);
+    var label = $('toHealthyLabel'), out = $('toHealthy');
+    if (state.weightKg > hi) {
+      out.textContent = fmtWeight(state.weightKg - hi);
+      label.textContent = 'Above the top of the healthy range';
+    } else if (state.weightKg < lo) {
+      out.textContent = fmtWeight(lo - state.weightKg);
+      label.textContent = 'Below the bottom of the healthy range';
+    } else {
+      out.textContent = 'In range';
+      label.textContent = 'Your weight is within the healthy range';
+    }
+  }
+
+  $('bmiForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var err = $('err1');
+    err.textContent = '';
+    $('calResult').classList.add('hidden');
+
+    var age = num('age');
+    var sexEl = document.querySelector('input[name="sex"]:checked');
+    var weightKg, heightCm;
+
+    if (age === null || age < 18 || age > 110) {
+      err.textContent = age !== null && age < 18
+        ? 'This calculator is for adults aged 18 and over. For a child or teenager, please ask a doctor, as BMI is judged differently for growing bodies.'
+        : 'Please enter your age (18 to 110).';
+      return;
+    }
+    if (!sexEl) { err.textContent = 'Please choose female or male. It is used for the calorie estimate.'; return; }
+
+    var w = num('weight');
+    if (units === 'us') {
+      var ft = num('ft'), inch = num('inch') || 0;
+      if (ft === null || ft < 3 || ft > 8 || inch < 0 || inch >= 12) { err.textContent = 'Please enter your height in feet (3 to 8) and inches (0 to 11.9).'; return; }
+      heightCm = (ft * 12 + inch) * 2.54;
+      if (w === null || w < 50 || w > 1000) { err.textContent = 'Please enter your weight in pounds (50 to 1,000).'; return; }
+      weightKg = w * 0.45359237;
+    } else {
+      heightCm = num('cm');
+      if (heightCm === null || heightCm < 90 || heightCm > 250) { err.textContent = 'Please enter your height in centimetres (90 to 250).'; return; }
+      if (w === null || w < 25 || w > 450) { err.textContent = 'Please enter your weight in kilograms (25 to 450).'; return; }
+      weightKg = w;
+    }
+
+    var m = heightCm / 100;
+    var bmi = weightKg / (m * m);
+    state = { bmi: bmi, weightKg: weightKg, heightCm: heightCm, age: age, sex: sexEl.value };
+
+    var cat = category(bmi);
+    $('bmiNum').textContent = round1(bmi).toFixed(1);
+    var catEl = $('bmiCat');
+    catEl.textContent = cat.name;
+    catEl.className = 'bmi-cat ' + cat.cls;
+
+    // gauge: scale runs 15 to 40
+    var pct = Math.max(0, Math.min(100, ((bmi - 15) / 25) * 100));
+    var marker = $('marker');
+    marker.setAttribute('data-value', round1(bmi).toFixed(1));
+    marker.style.left = '0%';
+    $('bmiResult').classList.remove('hidden');
+    requestAnimationFrame(function () { requestAnimationFrame(function () { marker.style.left = pct + '%'; }); });
+
+    refreshHealthyRange();
+
+    var note = $('bmiNote');
+    if (bmi < 18.5) {
+      note.textContent = 'Your BMI is below the healthy range. If you are losing weight without trying, or have concerns about your eating, please speak to a doctor.';
+    } else if (bmi < 25) {
+      note.textContent = 'Your BMI is in the healthy range. BMI is only a guide, so waist size, fitness and overall health matter too.';
+    } else {
+      note.textContent = 'BMI is a screening guide, not a diagnosis. It does not measure body fat, so it can read high for very muscular people. A doctor can give you the full picture.';
+    }
+
+    $('step2Card').classList.remove('hidden');
+    $('bmiResult').scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+  });
+
+  // ----- Calories (Mifflin-St Jeor) -----
+  var latestTarget = null;
+
+  $('calForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var err = $('err2');
+    err.textContent = '';
+    if (state.bmi === null) { err.textContent = 'Please complete Step 1 first.'; return; }
+
+    var act = parseFloat($('activity').value);
+    var goalRaw = $('goal').value;
+    if (!isFinite(act)) { err.textContent = 'Please choose your activity level.'; return; }
+    if (goalRaw === '') { err.textContent = 'Please choose your goal.'; return; }
+    var goal = parseInt(goalRaw, 10);
+
+    var bmr = 10 * state.weightKg + 6.25 * state.heightCm - 5 * state.age + (state.sex === 'male' ? 5 : -161);
+    var tdee = bmr * act;
+    var floor = state.sex === 'male' ? 1500 : 1200;
+    var raw = tdee + goal;
+    var target = Math.round(Math.max(floor, raw));
+    latestTarget = target;
+
+    $('bmrOut').textContent = commas(bmr);
+    $('tdeeOut').textContent = commas(tdee);
+    $('calTarget').textContent = commas(target);
+    $('ctaCal').textContent = commas(target);
+
+    var noteEl = $('calNote');
+    var msgs = [];
+    if (raw < floor) {
+      msgs.push('Your calculated figure was below ' + commas(floor) + ' calories, which is the lowest level we recommend without medical supervision, so your target has been set to ' + commas(floor) + '.');
+    }
+    if (state.bmi < 18.5 && goal < 0) {
+      msgs.push('Your BMI is below the healthy range, so weight loss is not usually advised. Please speak to a doctor before trying to lose weight.');
+    }
+    if (msgs.length) { noteEl.textContent = msgs.join(' '); noteEl.classList.remove('hidden'); }
+    else { noteEl.classList.add('hidden'); }
+
+    $('ctaLink').href = MEAL_PLANNER_URL + '?calories=' + target + '&utm_source=bmi-calculator&utm_medium=calculator&utm_campaign=free-tools';
+    $('calResult').classList.remove('hidden');
+    $('calResult').scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+  });
+
+  $('copyBtn').addEventListener('click', function () {
+    if (latestTarget === null) return;
+    var btn = this, text = String(latestTarget);
+    function done() { btn.textContent = 'Copied: ' + commas(latestTarget) + ' calories'; setTimeout(function () { btn.textContent = 'Copy my calorie number'; }, 2500); }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { btn.textContent = 'Your number: ' + text; });
+    } else { btn.textContent = 'Your number: ' + text; }
+  });
+})();
+</script>
+</body>
+</html>
