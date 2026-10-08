@@ -1,1 +1,103 @@
+name: Update sitemap
 
+# Runs whenever a file in the blog folder is added or changed.
+# It rebuilds the blog entries in sitemap.xml and leaves every other entry alone.
+# You can also run it by hand from the Actions tab (Run workflow).
+
+on:
+  push:
+    paths:
+      - '**/blog/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sitemap:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get the site files
+        uses: actions/checkout@v4
+
+      - name: Rebuild the blog entries in sitemap.xml
+        run: |
+          python3 - <<'PY'
+          import re, sys, datetime, pathlib
+          from xml.dom import minidom
+
+          BASE = "https://caribplate.app"
+          root = pathlib.Path(".")
+
+          # 1. Find the blog folder and the sitemap that sits next to it.
+          blogs = [p for p in root.glob("**/blog/index.html")
+                   if ".git" not in p.parts and "node_modules" not in p.parts]
+          if len(blogs) != 1:
+              sys.exit("Expected exactly one blog/index.html, found %d. Nothing changed." % len(blogs))
+          blog = blogs[0].parent
+          sitemap = blog.parent / "sitemap.xml"
+          if not sitemap.exists():
+              sys.exit("No sitemap.xml next to the blog folder. Nothing changed.")
+
+          # 2. Read every article in the blog folder (pages marked as og:type article).
+          today = datetime.date.today().isoformat()
+          posts = []
+          for f in sorted(blog.glob("*.html")):
+              if f.name == "index.html":
+                  continue
+              text = f.read_text(encoding="utf-8", errors="ignore")
+              if not re.search(r'<meta\s+property="og:type"\s+content="article"', text):
+                  continue
+              m = re.search(r'<link\s+rel="canonical"\s+href="([^"]+)"', text)
+              if not m or not m.group(1).startswith(BASE + "/blog/"):
+                  print("Skipping %s: no usable canonical address" % f.name)
+                  continue
+              d = (re.search(r'"dateModified":"(\d{4}-\d{2}-\d{2})', text)
+                   or re.search(r'"datePublished":"(\d{4}-\d{2}-\d{2})', text))
+              posts.append((d.group(1) if d else today, m.group(1)))
+          posts.sort(reverse=True)
+
+          # 3. Keep every non-blog entry exactly as it is; rebuild the blog entries.
+          original = sitemap.read_text(encoding="utf-8")
+          block = re.compile(r"[ \t]*<url>.*?</url>[ \t]*\n?", re.S)
+          kept_count = 0
+          def drop_blog(m):
+              global kept_count
+              loc = re.search(r"<loc>\s*(.*?)\s*</loc>", m.group(0), re.S)
+              if loc and loc.group(1).startswith(BASE + "/blog"):
+                  return ""
+              kept_count += 1
+              return m.group(0)
+          stripped = block.sub(drop_blog, original)
+
+          home_date = posts[0][0] if posts else today
+          entries = ["  <url><loc>%s/blog/</loc><lastmod>%s</lastmod></url>\n" % (BASE, home_date)]
+          for date, url in posts:
+              entries.append("  <url><loc>%s</loc><lastmod>%s</lastmod></url>\n" % (url, date))
+          if "</urlset>" not in stripped:
+              sys.exit("sitemap.xml has no closing urlset tag. Nothing changed.")
+          updated = stripped.replace("</urlset>", "".join(entries) + "</urlset>")
+
+          # 4. Safety checks, then write.
+          minidom.parseString(updated.encode("utf-8"))
+          new_count = len(re.findall(r"<url>", updated))
+          if new_count != kept_count + len(entries):
+              sys.exit("Entry count check failed. Nothing changed.")
+          if updated == original:
+              print("Sitemap already up to date (%d blog posts)." % len(posts))
+          else:
+              sitemap.write_text(updated, encoding="utf-8")
+              print("Sitemap updated with %d blog posts; %d other pages kept." % (len(posts), kept_count))
+          PY
+
+      - name: Save the sitemap if it changed
+        run: |
+          if git diff --quiet; then
+            echo "Nothing to save."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -am "Update sitemap with new blog posts"
+            git pull --rebase
+            git push
+          fi
